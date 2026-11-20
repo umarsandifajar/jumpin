@@ -8,11 +8,10 @@ import AuthModal from './components/AuthModal';
 import PlaylistModal from './components/PlaylistModal';
 import { INITIAL_TRACKS, getAudioStreamUrl } from './services/pipedApi';
 import { 
-  getCurrentUser, 
-  signOut as apiSignOut, 
-  getLikedSongs, 
-  toggleLikedSong 
-} from './services/supabaseClient';
+  getSavedSession, 
+  logoutGoogle, 
+  fetchPlaylistTracks 
+} from './services/youtubeAuth';
 
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
@@ -27,28 +26,32 @@ export default function App() {
   const [isQueueOpen, setIsQueueOpen] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  // Auth & Cloud Sync States (Option 3)
+  // Google & YouTube Music State
   const [user, setUser] = useState(null);
+  const [googleToken, setGoogleToken] = useState(null);
+  const [userPlaylists, setUserPlaylists] = useState([]);
   const [likedTracks, setLikedTracks] = useState([]);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+
+  // Playlist View State
   const [isLikedModalOpen, setIsLikedModalOpen] = useState(false);
+  const [selectedPlaylist, setSelectedPlaylist] = useState(null);
+  const [playlistTracks, setPlaylistTracks] = useState([]);
+  const [isPlaylistModalOpen, setIsPlaylistModalOpen] = useState(false);
+  const [loadingPlaylist, setLoadingPlaylist] = useState(false);
 
   const audioRef = useRef(null);
   const currentTrack = queue[currentIndex] || INITIAL_TRACKS[0];
 
-  // Load User & Liked Songs on mount
+  // Restore Google Session on mount
   useEffect(() => {
-    const initAuth = async () => {
-      try {
-        const currentUser = await getCurrentUser();
-        setUser(currentUser);
-        const savedLiked = await getLikedSongs(currentUser?.id);
-        setLikedTracks(savedLiked);
-      } catch (err) {
-        console.warn('Init auth error:', err);
-      }
-    };
-    initAuth();
+    const session = getSavedSession();
+    if (session && session.profile) {
+      setUser(session.profile);
+      setGoogleToken(session.token);
+      if (session.playlists) setUserPlaylists(session.playlists);
+      if (session.liked) setLikedTracks(session.liked);
+    }
   }, []);
 
   // Initialize Audio element and event listeners
@@ -232,10 +235,14 @@ export default function App() {
     }
   };
 
-  // Toggle Like Song (Saved to Supabase / Local)
-  const handleToggleLike = async () => {
-    const { likedList } = await toggleLikedSong(user?.id, currentTrack);
-    setLikedTracks(likedList);
+  // Toggle Like Song (Saved to Local/Google Cache)
+  const handleToggleLike = () => {
+    const exists = likedTracks.some(t => t.id === currentTrack.id);
+    const updated = exists 
+      ? likedTracks.filter(t => t.id !== currentTrack.id)
+      : [currentTrack, ...likedTracks];
+    setLikedTracks(updated);
+    localStorage.setItem('jumpin_google_liked', JSON.stringify(updated));
   };
 
   // Play whole playlist (with optional shuffle)
@@ -255,9 +262,36 @@ export default function App() {
     }
   };
 
-  const handleSignOut = async () => {
-    await apiSignOut();
+  // Open a specific user YouTube playlist
+  const handleSelectPlaylist = async (playlist) => {
+    setSelectedPlaylist(playlist);
+    setIsPlaylistModalOpen(true);
+    setLoadingPlaylist(true);
+
+    try {
+      const tracks = await fetchPlaylistTracks(googleToken, playlist.id);
+      setPlaylistTracks(tracks);
+    } catch (err) {
+      console.error('Fetch playlist items error:', err);
+    } finally {
+      setLoadingPlaylist(false);
+    }
+  };
+
+  // Handle Google OAuth Login Success
+  const handleLoginSuccess = ({ profile, playlists, likedTracks: importedLiked, accessToken }) => {
+    setUser(profile);
+    setGoogleToken(accessToken);
+    if (playlists) setUserPlaylists(playlists);
+    if (importedLiked && importedLiked.length > 0) setLikedTracks(importedLiked);
+  };
+
+  const handleSignOut = () => {
+    logoutGoogle();
     setUser(null);
+    setGoogleToken(null);
+    setUserPlaylists([]);
+    setLikedTracks([]);
   };
 
   const isCurrentTrackLiked = likedTracks.some(t => t.id === currentTrack.id);
@@ -293,7 +327,7 @@ export default function App() {
         onOpenDrawer={() => setIsDrawerOpen(true)}
       />
 
-      {/* Navigation Library Drawer (Apple Style) */}
+      {/* Navigation Library Drawer with Real User Playlists */}
       <SidebarDrawer
         isOpen={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
@@ -301,6 +335,8 @@ export default function App() {
         onOpenQueue={() => setIsQueueOpen(true)}
         onOpenLikedMusic={() => setIsLikedModalOpen(true)}
         onOpenAuth={() => setIsAuthOpen(true)}
+        onSelectPlaylist={handleSelectPlaylist}
+        playlists={userPlaylists}
         user={user}
         onSignOut={handleSignOut}
         likedTracksCount={likedTracks.length}
@@ -327,21 +363,30 @@ export default function App() {
         isOpen={isLikedModalOpen}
         onClose={() => setIsLikedModalOpen(false)}
         title="Liked Music"
-        subtitle="Synced with your Account"
+        subtitle="Imported from YouTube Music"
         tracks={likedTracks}
         isLikedView={true}
         onPlayTrack={handleSelectTrack}
         onPlayAll={handlePlayAll}
       />
 
-      {/* Cloud Account Sign-in Modal (Option 3) */}
+      {/* Selected YouTube Playlist Modal */}
+      <PlaylistModal
+        isOpen={isPlaylistModalOpen}
+        onClose={() => setIsPlaylistModalOpen(false)}
+        title={selectedPlaylist?.name || "YouTube Playlist"}
+        subtitle={`${playlistTracks.length} songs from YouTube`}
+        tracks={playlistTracks}
+        isLikedView={false}
+        onPlayTrack={handleSelectTrack}
+        onPlayAll={handlePlayAll}
+      />
+
+      {/* Real Google OAuth Sign-in Modal */}
       <AuthModal
         isOpen={isAuthOpen}
         onClose={() => setIsAuthOpen(false)}
-        onLoginSuccess={(u) => {
-          setUser(u);
-          getLikedSongs(u.id).then(setLikedTracks);
-        }}
+        onLoginSuccess={handleLoginSuccess}
       />
     </div>
   );

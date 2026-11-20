@@ -1,25 +1,29 @@
 import React, { useState } from 'react';
-import { X, Sparkles, ShieldCheck, CheckCircle2, Loader2 } from 'lucide-react';
-import { signInWithGoogle } from '../services/supabaseClient';
+import { X, Sparkles, CheckCircle2, Loader2, Music2 } from 'lucide-react';
+import { loginWithGoogleYouTube } from '../services/youtubeAuth';
 
 export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
   const [loading, setLoading] = useState(false);
+  const [statusMessage, setStatusMessage] = useState('');
 
   if (!isOpen) return null;
 
   const handleGoogleLogin = async () => {
     setLoading(true);
+    setStatusMessage('Opening Google authorization...');
     try {
-      const user = await signInWithGoogle();
-      if (user) {
-        onLoginSuccess(user);
+      const result = await loginWithGoogleYouTube();
+      if (result) {
+        setStatusMessage('Syncing YouTube playlists...');
+        onLoginSuccess(result);
         onClose();
       }
     } catch (err) {
-      console.error('Login error:', err);
-      alert('Login error: ' + err.message);
+      console.error('Google Sign-In error:', err);
+      alert('Google Sign-In: ' + (err.message || 'Canceled or origin blocked'));
     } finally {
       setLoading(false);
+      setStatusMessage('');
     }
   };
 
@@ -28,7 +32,7 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
       {/* Backdrop */}
       <div 
         onClick={onClose}
-        className="fixed inset-0 bg-black/70 backdrop-blur-md animate-fade-in"
+        className="fixed inset-0 bg-black/75 backdrop-blur-md animate-fade-in"
       />
 
       {/* Modal Dialog */}
@@ -44,12 +48,12 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
         {/* Center Branding */}
         <div className="flex flex-col items-center text-center mt-2">
           <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-rose-500 to-amber-500 flex items-center justify-center shadow-lg shadow-rose-500/20 mb-4">
-            <Sparkles size={28} className="text-white" />
+            <Music2 size={28} className="text-white" />
           </div>
 
-          <h3 className="text-2xl font-extrabold tracking-tight">JumpIn Cloud</h3>
-          <p className="text-xs text-white/60 mt-1.5 max-w-[240px]">
-            Sync your liked music and playlists across iPhone and all your devices.
+          <h3 className="text-2xl font-extrabold tracking-tight">Connect YouTube</h3>
+          <p className="text-xs text-white/60 mt-1.5 max-w-[250px]">
+            Sign in with your Google account to automatically import all your existing YouTube Music playlists!
           </p>
         </div>
 
@@ -57,15 +61,15 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
         <div className="space-y-2.5 my-6 bg-white/5 border border-white/10 rounded-2xl p-4 text-xs text-white/80">
           <div className="flex items-center space-x-2.5">
             <CheckCircle2 size={16} className="text-rose-400 shrink-0" />
-            <span>Instant sync with your iPhone PWA</span>
+            <span>Loads all your existing YouTube playlists</span>
           </div>
           <div className="flex items-center space-x-2.5">
             <CheckCircle2 size={16} className="text-rose-400 shrink-0" />
-            <span>Unlimited Liked Songs & Playlists</span>
+            <span>Imports your real YouTube Liked Songs</span>
           </div>
           <div className="flex items-center space-x-2.5">
             <CheckCircle2 size={16} className="text-rose-400 shrink-0" />
-            <span>No ads, pure background playback</span>
+            <span>Direct stream with pure background playback</span>
           </div>
         </div>
 
@@ -76,7 +80,10 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
           className="w-full flex items-center justify-center space-x-3 py-3.5 px-4 rounded-2xl bg-white text-black font-semibold text-sm hover:bg-white/90 active:scale-95 transition shadow-lg"
         >
           {loading ? (
-            <Loader2 size={18} className="animate-spin text-black" />
+            <div className="flex items-center space-x-2">
+              <Loader2 size={18} className="animate-spin text-black" />
+              <span className="text-xs">{statusMessage || 'Connecting...'}</span>
+            </div>
           ) : (
             <>
               {/* Google G Logo SVG */}
@@ -104,7 +111,7 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
         </button>
 
         <p className="text-[11px] text-white/40 text-center mt-4">
-          By continuing, you agree to JumpIn's seamless music experience.
+          Safe & read-only access to your YouTube playlists.
         </p>
       </div>
     </div>

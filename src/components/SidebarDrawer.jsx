@@ -23,14 +23,16 @@ export default function SidebarDrawer({
   onOpenQueue,
   onOpenLikedMusic,
   onOpenAuth,
+  onSelectPlaylist,
+  playlists = [],
   user,
   onSignOut,
   likedTracksCount = 0 
 }) {
   if (!isOpen) return null;
 
-  const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Music Fan';
-  const userAvatar = user?.user_metadata?.avatar_url;
+  const userName = user?.name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Music Fan';
+  const userAvatar = user?.avatar || user?.user_metadata?.avatar_url;
 
   return (
     <div className="fixed inset-0 z-50 flex">
@@ -41,7 +43,7 @@ export default function SidebarDrawer({
       />
 
       {/* Drawer Content */}
-      <aside className="relative w-[290px] max-w-[85vw] h-full bg-[#161618]/95 backdrop-blur-2xl border-r border-white/10 flex flex-col safe-top safe-bottom p-5 text-white z-10 shadow-2xl animate-slide-up">
+      <aside className="relative w-[300px] max-w-[85vw] h-full bg-[#161618]/95 backdrop-blur-2xl border-r border-white/10 flex flex-col safe-top safe-bottom p-5 text-white z-10 shadow-2xl animate-slide-up">
         {/* Drawer Header */}
         <div className="flex items-center justify-between pb-4 border-b border-white/10">
           <div className="flex items-center space-x-2.5">
@@ -71,7 +73,7 @@ export default function SidebarDrawer({
               )}
               <div className="truncate">
                 <p className="text-xs font-semibold text-white truncate">{userName}</p>
-                <p className="text-[10px] text-white/50 truncate">Cloud Synced</p>
+                <p className="text-[10px] text-rose-400 font-medium truncate">YouTube Connected</p>
               </div>
             </div>
           ) : (
@@ -81,7 +83,7 @@ export default function SidebarDrawer({
               </div>
               <div>
                 <p className="text-xs font-semibold text-white">Guest Mode</p>
-                <p className="text-[10px] text-white/50">Login to sync iPhone</p>
+                <p className="text-[10px] text-white/50">Connect Google/YouTube</p>
               </div>
             </div>
           )}
@@ -192,13 +194,6 @@ export default function SidebarDrawer({
               <Music size={18} className="text-white/70" />
               <span>Songs</span>
             </button>
-
-            <button
-              className="w-full flex items-center space-x-3.5 px-3 py-2.5 rounded-xl hover:bg-white/10 active:bg-white/15 transition text-white/80 hover:text-white font-medium text-sm text-left opacity-75"
-            >
-              <User size={18} className="text-white/70" />
-              <span>Made for You</span>
-            </button>
           </div>
 
           {/* Section: Playlists */}
@@ -225,16 +220,30 @@ export default function SidebarDrawer({
               )}
             </button>
 
-            <button
-              onClick={() => {
-                onClose();
-                onOpenQueue();
-              }}
-              className="w-full flex items-center space-x-3.5 px-3 py-2.5 rounded-xl hover:bg-white/10 active:bg-white/15 transition text-white/80 hover:text-white font-medium text-sm text-left"
-            >
-              <LayoutGrid size={18} className="text-white/70" />
-              <span>All Playlists</span>
-            </button>
+            {/* User's Real YouTube Playlists */}
+            {playlists && playlists.length > 0 && (
+              <div className="space-y-1 pt-2">
+                <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-rose-400">
+                  YouTube Playlists ({playlists.length})
+                </p>
+                {playlists.map((pl) => (
+                  <button
+                    key={pl.id}
+                    onClick={() => {
+                      onClose();
+                      if (onSelectPlaylist) onSelectPlaylist(pl);
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-white/10 active:bg-white/15 transition text-white/85 hover:text-white font-medium text-xs text-left group"
+                  >
+                    <div className="flex items-center space-x-2.5 truncate mr-2">
+                      <img src={pl.cover} alt={pl.name} className="w-6 h-6 rounded-md object-cover shadow-sm shrink-0" />
+                      <span className="truncate">{pl.name}</span>
+                    </div>
+                    <span className="text-[11px] text-white/40 shrink-0">{pl.itemCount}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
