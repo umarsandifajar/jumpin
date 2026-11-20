@@ -100,6 +100,76 @@ export async function fetchGoogleProfile(token) {
   };
 }
 
+// Search YouTube Music using official Google API with user token
+export async function searchYouTubeOfficial(query, token) {
+  if (!query || !query.trim()) return [];
+
+  try {
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    const res = await fetch(
+      `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoCategoryId=10&maxResults=25&q=${encodeURIComponent(query)}`,
+      { headers }
+    );
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data && Array.isArray(data.items)) {
+        return data.items
+          .filter(item => item.id?.videoId)
+          .map(item => {
+            const videoId = item.id.videoId;
+            const thumbs = item.snippet.thumbnails;
+            const cover = thumbs?.high?.url || thumbs?.medium?.url || thumbs?.default?.url || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+            return {
+              id: videoId,
+              title: item.snippet.title,
+              artist: item.snippet.channelTitle || 'YouTube Artist',
+              album: 'YouTube Music',
+              cover,
+              audioUrl: `/api/stream?id=${videoId}`,
+              isStream: true
+            };
+          });
+      }
+    }
+  } catch (err) {
+    console.warn('Official YouTube search error:', err);
+  }
+  return [];
+}
+
+// Fetch YouTube Trending / New Releases (Explore / New)
+export async function fetchTrendingMusic(token) {
+  try {
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    const res = await fetch(
+      'https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&chart=mostPopular&videoCategoryId=10&maxResults=30',
+      { headers }
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    if (!data.items) return [];
+
+    return data.items.map(item => {
+      const videoId = item.id;
+      const thumbs = item.snippet.thumbnails;
+      const cover = thumbs?.high?.url || thumbs?.medium?.url || thumbs?.default?.url || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+      return {
+        id: videoId,
+        title: item.snippet.title,
+        artist: item.snippet.channelTitle || 'YouTube Artist',
+        album: 'YouTube Trending',
+        cover,
+        audioUrl: `/api/stream?id=${videoId}`,
+        isStream: true
+      };
+    });
+  } catch (err) {
+    console.warn('Trending music error:', err);
+    return [];
+  }
+}
+
 // Fetch all existing user playlists from YouTube Music / YouTube
 export async function fetchUserYouTubePlaylists(token) {
   try {
@@ -187,6 +257,28 @@ export async function fetchYouTubeLikedTracks(token) {
     return await fetchPlaylistTracks(token, likedPlaylistId);
   } catch (err) {
     console.warn('Error fetching liked videos:', err);
+    return [];
+  }
+}
+
+// Fetch Subscribed Artists / Channels from user's YouTube account
+export async function fetchSubscribedArtists(token) {
+  try {
+    const res = await fetch(
+      'https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=50',
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    if (!data.items) return [];
+
+    return data.items.map(item => ({
+      id: item.snippet.resourceId.channelId,
+      name: item.snippet.title,
+      cover: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url,
+    }));
+  } catch (err) {
+    console.warn('Error fetching subscriptions:', err);
     return [];
   }
 }

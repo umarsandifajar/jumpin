@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Search, X, Music, Play, Loader2 } from 'lucide-react';
 import { searchSongs } from '../services/pipedApi';
 
-export default function SearchModal({ isOpen, onClose, onSelectTrack }) {
+export default function SearchModal({ isOpen, onClose, onSelectTrack, googleToken }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -15,7 +15,7 @@ export default function SearchModal({ isOpen, onClose, onSelectTrack }) {
 
     setLoading(true);
     try {
-      const data = await searchSongs(query);
+      const data = await searchSongs(query, googleToken);
       setResults(data);
     } catch (err) {
       console.error(err);

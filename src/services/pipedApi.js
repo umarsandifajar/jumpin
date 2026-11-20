@@ -1,5 +1,4 @@
-// Service for YouTube Music audio streams via local yt-dlp backend
-// with built-in high-quality initial tracks
+import { searchYouTubeOfficial } from './youtubeAuth';
 
 export const INITIAL_TRACKS = [
   {
@@ -44,11 +43,23 @@ export const INITIAL_TRACKS = [
   }
 ];
 
-// Search songs using our local backend endpoint, with public Piped fallback
-export async function searchSongs(query) {
+// Search songs using Google official API first, then local backend, then fallback
+export async function searchSongs(query, googleToken = null) {
   if (!query || !query.trim()) return [];
 
-  // 1. Try local server yt-dlp API (most accurate and up to date)
+  // 1. If user has Google Token, search official YouTube Data API (fastest, most accurate)
+  if (googleToken) {
+    try {
+      const results = await searchYouTubeOfficial(query, googleToken);
+      if (results && results.length > 0) {
+        return results;
+      }
+    } catch (err) {
+      console.warn('Official YouTube search error:', err);
+    }
+  }
+
+  // 2. Try server search endpoint (/api/search)
   try {
     const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
     if (res.ok) {
@@ -58,10 +69,10 @@ export async function searchSongs(query) {
       }
     }
   } catch (err) {
-    console.warn('Local search failed, trying public fallback:', err);
+    console.warn('Server search failed:', err);
   }
 
-  // Fallback filter from local tracks
+  // 3. Fallback filter from local tracks
   return INITIAL_TRACKS.filter(t => 
     t.title.toLowerCase().includes(query.toLowerCase()) || 
     t.artist.toLowerCase().includes(query.toLowerCase())

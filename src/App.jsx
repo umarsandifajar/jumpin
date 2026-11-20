@@ -10,7 +10,9 @@ import { INITIAL_TRACKS, getAudioStreamUrl } from './services/pipedApi';
 import { 
   getSavedSession, 
   logoutGoogle, 
-  fetchPlaylistTracks 
+  fetchPlaylistTracks,
+  fetchTrendingMusic,
+  fetchSubscribedArtists
 } from './services/youtubeAuth';
 
 export default function App() {
@@ -278,6 +280,37 @@ export default function App() {
     }
   };
 
+  // Open YouTube Trending / Explore Music
+  const handleOpenTrending = async () => {
+    setSelectedPlaylist({ name: 'Trending & Baru di YouTube' });
+    setIsPlaylistModalOpen(true);
+    setLoadingPlaylist(true);
+    try {
+      const tracks = await fetchTrendingMusic(googleToken);
+      setPlaylistTracks(tracks);
+    } catch (err) {
+      console.error('Fetch trending music error:', err);
+    } finally {
+      setLoadingPlaylist(false);
+    }
+  };
+
+  // Open Subscribed Artists
+  const handleOpenArtists = async () => {
+    try {
+      const artists = await fetchSubscribedArtists(googleToken);
+      if (artists && artists.length > 0) {
+        // Open search for the first top subscribed artist or trending
+        setIsSearchOpen(true);
+      } else {
+        setIsSearchOpen(true);
+      }
+    } catch (err) {
+      console.error('Fetch artists error:', err);
+      setIsSearchOpen(true);
+    }
+  };
+
   // Handle Google OAuth Login Success
   const handleLoginSuccess = ({ profile, playlists, likedTracks: importedLiked, accessToken }) => {
     setUser(profile);
@@ -334,6 +367,8 @@ export default function App() {
         onOpenSearch={() => setIsSearchOpen(true)}
         onOpenQueue={() => setIsQueueOpen(true)}
         onOpenLikedMusic={() => setIsLikedModalOpen(true)}
+        onOpenTrending={handleOpenTrending}
+        onOpenArtists={handleOpenArtists}
         onOpenAuth={() => setIsAuthOpen(true)}
         onSelectPlaylist={handleSelectPlaylist}
         playlists={userPlaylists}
@@ -342,11 +377,12 @@ export default function App() {
         likedTracksCount={likedTracks.length}
       />
 
-      {/* Search Modal */}
+      {/* Search Modal with Google Token */}
       <SearchModal
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
         onSelectTrack={handleSelectTrack}
+        googleToken={googleToken}
       />
 
       {/* Playing Queue Modal */}

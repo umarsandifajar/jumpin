@@ -2,17 +2,16 @@ import React from 'react';
 import { 
   Search, 
   Home, 
-  Sparkles, 
+  Flame, 
   Clock, 
   Mic2, 
-  Disc3, 
   Music, 
   User, 
-  LayoutGrid, 
   Heart, 
   X,
   LogOut,
-  LogIn
+  LogIn,
+  Library
 } from 'lucide-react';
 import JumpInLogo from './JumpInLogo';
 
@@ -22,6 +21,8 @@ export default function SidebarDrawer({
   onOpenSearch, 
   onOpenQueue,
   onOpenLikedMusic,
+  onOpenTrending,
+  onOpenArtists,
   onOpenAuth,
   onSelectPlaylist,
   playlists = [],
@@ -43,7 +44,7 @@ export default function SidebarDrawer({
       />
 
       {/* Drawer Content */}
-      <aside className="relative w-[300px] max-w-[85vw] h-full bg-[#161618]/95 backdrop-blur-2xl border-r border-white/10 flex flex-col safe-top safe-bottom p-5 text-white z-10 shadow-2xl animate-slide-up">
+      <aside className="relative w-[305px] max-w-[85vw] h-full bg-[#161618]/95 backdrop-blur-2xl border-r border-white/10 flex flex-col safe-top safe-bottom p-5 text-white z-10 shadow-2xl animate-slide-up">
         {/* Drawer Header */}
         <div className="flex items-center justify-between pb-4 border-b border-white/10">
           <div className="flex items-center space-x-2.5">
@@ -83,7 +84,7 @@ export default function SidebarDrawer({
               </div>
               <div>
                 <p className="text-xs font-semibold text-white">Guest Mode</p>
-                <p className="text-[10px] text-white/50">Connect Google/YouTube</p>
+                <p className="text-[10px] text-white/50">Login with Google</p>
               </div>
             </div>
           )}
@@ -110,7 +111,7 @@ export default function SidebarDrawer({
           )}
         </div>
 
-        {/* Menu Navigation List */}
+        {/* Menu Navigation List (Mirrors YouTube Music Structure) */}
         <div className="flex-1 overflow-y-auto py-2 space-y-5 select-none">
           {/* Top Primary Actions */}
           <div className="space-y-1">
@@ -122,7 +123,7 @@ export default function SidebarDrawer({
               className="w-full flex items-center space-x-3.5 px-3 py-2.5 rounded-xl hover:bg-white/10 active:bg-white/15 transition text-white/80 hover:text-white font-medium text-sm text-left"
             >
               <Search size={18} className="text-white/70" />
-              <span>Search</span>
+              <span>Search / Cari Musik</span>
             </button>
 
             <button
@@ -130,88 +131,39 @@ export default function SidebarDrawer({
               className="w-full flex items-center space-x-3.5 px-3 py-2.5 rounded-xl bg-white/10 text-white font-semibold text-sm text-left"
             >
               <Home size={18} className="text-rose-500" />
-              <span>Home</span>
+              <span>Beranda (Home)</span>
             </button>
 
             <button
               onClick={() => {
                 onClose();
-                onOpenSearch();
+                if (onOpenTrending) onOpenTrending();
               }}
               className="w-full flex items-center space-x-3.5 px-3 py-2.5 rounded-xl hover:bg-white/10 active:bg-white/15 transition text-white/80 hover:text-white font-medium text-sm text-left"
             >
-              <Sparkles size={18} className="text-white/70" />
-              <span>New</span>
+              <Flame size={18} className="text-amber-400" />
+              <span>Trending & Baru (Explore)</span>
             </button>
           </div>
 
-          {/* Section: Library */}
+          {/* Section: Library / Koleksi Saya */}
           <div className="space-y-1">
-            <p className="px-3 text-xs font-semibold uppercase tracking-wider text-white/40 mb-1.5">
-              Library
-            </p>
+            <div className="flex items-center space-x-2 px-3 mb-1.5 text-xs font-semibold uppercase tracking-wider text-white/40">
+              <Library size={14} />
+              <span>Koleksi YouTube</span>
+            </div>
 
-            <button
-              onClick={() => {
-                onClose();
-                onOpenQueue();
-              }}
-              className="w-full flex items-center space-x-3.5 px-3 py-2.5 rounded-xl hover:bg-white/10 active:bg-white/15 transition text-white/80 hover:text-white font-medium text-sm text-left"
-            >
-              <Clock size={18} className="text-white/70" />
-              <span>Recently Played</span>
-            </button>
-
-            <button
-              onClick={() => {
-                onClose();
-                onOpenSearch();
-              }}
-              className="w-full flex items-center space-x-3.5 px-3 py-2.5 rounded-xl hover:bg-white/10 active:bg-white/15 transition text-white/80 hover:text-white font-medium text-sm text-left"
-            >
-              <Mic2 size={18} className="text-white/70" />
-              <span>Artists</span>
-            </button>
-
-            <button
-              onClick={() => {
-                onClose();
-                onOpenSearch();
-              }}
-              className="w-full flex items-center space-x-3.5 px-3 py-2.5 rounded-xl hover:bg-white/10 active:bg-white/15 transition text-white/80 hover:text-white font-medium text-sm text-left"
-            >
-              <Disc3 size={18} className="text-white/70" />
-              <span>Albums</span>
-            </button>
-
-            <button
-              onClick={() => {
-                onClose();
-                onOpenQueue();
-              }}
-              className="w-full flex items-center space-x-3.5 px-3 py-2.5 rounded-xl hover:bg-white/10 active:bg-white/15 transition text-white/80 hover:text-white font-medium text-sm text-left"
-            >
-              <Music size={18} className="text-white/70" />
-              <span>Songs</span>
-            </button>
-          </div>
-
-          {/* Section: Playlists */}
-          <div className="space-y-1">
-            <p className="px-3 text-xs font-semibold uppercase tracking-wider text-white/40 mb-1.5">
-              Playlists
-            </p>
-
+            {/* Liked Music */}
             <button
               onClick={() => {
                 onClose();
                 onOpenLikedMusic();
               }}
-              className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-white/10 active:bg-white/15 transition text-white/80 hover:text-white font-medium text-sm text-left"
+              className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-white/10 active:bg-white/15 transition text-white/85 hover:text-white font-medium text-sm text-left"
             >
               <div className="flex items-center space-x-3.5">
                 <Heart size={18} className="text-rose-500 fill-rose-500/20" />
-                <span>Liked Music</span>
+                <span>Lagu Disukai (Liked Music)</span>
               </div>
               {likedTracksCount > 0 && (
                 <span className="text-xs px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-400 font-semibold">
@@ -220,12 +172,39 @@ export default function SidebarDrawer({
               )}
             </button>
 
-            {/* User's Real YouTube Playlists */}
-            {playlists && playlists.length > 0 && (
-              <div className="space-y-1 pt-2">
-                <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-rose-400">
-                  YouTube Playlists ({playlists.length})
-                </p>
+            {/* Subscribed Artists */}
+            <button
+              onClick={() => {
+                onClose();
+                if (onOpenArtists) onOpenArtists();
+              }}
+              className="w-full flex items-center space-x-3.5 px-3 py-2.5 rounded-xl hover:bg-white/10 active:bg-white/15 transition text-white/80 hover:text-white font-medium text-sm text-left"
+            >
+              <Mic2 size={18} className="text-white/70" />
+              <span>Artis yang Diikuti</span>
+            </button>
+
+            {/* Recently Played History */}
+            <button
+              onClick={() => {
+                onClose();
+                onOpenQueue();
+              }}
+              className="w-full flex items-center space-x-3.5 px-3 py-2.5 rounded-xl hover:bg-white/10 active:bg-white/15 transition text-white/80 hover:text-white font-medium text-sm text-left"
+            >
+              <Clock size={18} className="text-white/70" />
+              <span>Riwayat Putar (History)</span>
+            </button>
+          </div>
+
+          {/* Section: Real User YouTube Playlists */}
+          <div className="space-y-1">
+            <p className="px-3 text-xs font-semibold uppercase tracking-wider text-white/40 mb-1.5">
+              Daftar Putar Saya ({playlists.length})
+            </p>
+
+            {playlists && playlists.length > 0 ? (
+              <div className="space-y-1">
                 {playlists.map((pl) => (
                   <button
                     key={pl.id}
@@ -236,12 +215,16 @@ export default function SidebarDrawer({
                     className="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-white/10 active:bg-white/15 transition text-white/85 hover:text-white font-medium text-xs text-left group"
                   >
                     <div className="flex items-center space-x-2.5 truncate mr-2">
-                      <img src={pl.cover} alt={pl.name} className="w-6 h-6 rounded-md object-cover shadow-sm shrink-0" />
+                      <img src={pl.cover} alt={pl.name} className="w-7 h-7 rounded-lg object-cover shadow-sm shrink-0" />
                       <span className="truncate">{pl.name}</span>
                     </div>
-                    <span className="text-[11px] text-white/40 shrink-0">{pl.itemCount}</span>
+                    <span className="text-[11px] text-white/40 shrink-0 font-mono">{pl.itemCount}</span>
                   </button>
                 ))}
+              </div>
+            ) : (
+              <div className="px-3 py-2 text-xs text-white/40 italic">
+                {user ? 'Belum ada playlist di akun YouTube' : 'Login Google untuk memuat playlist'}
               </div>
             )}
           </div>
