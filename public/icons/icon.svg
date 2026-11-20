@@ -19,20 +19,23 @@
   <rect width="512" height="512" rx="115" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="4"/>
 
   <!-- Glowing Ambient Radial -->
-  <circle cx="256" cy="256" r="160" fill="#FA233B" opacity="0.18" filter="url(#glow)"/>
+  <circle cx="256" cy="256" r="160" fill="#FA233B" opacity="0.22" filter="url(#glow)"/>
 
-  <!-- Audio Bars / Dynamic Waves -->
-  <g transform="translate(136, 156)">
-    <!-- Bar 1 -->
-    <rect x="0" y="80" width="36" height="120" rx="18" fill="#ffffff" opacity="0.85"/>
-    <!-- Bar 2 -->
-    <rect x="68" y="20" width="36" height="180" rx="18" fill="url(#roseGrad)" filter="url(#glow)"/>
-    <!-- Bar 3 -->
-    <rect x="136" y="50" width="36" height="150" rx="18" fill="#ffffff"/>
-    <!-- Bar 4 -->
-    <rect x="204" y="90" width="36" height="110" rx="18" fill="#ffffff" opacity="0.75"/>
+  <!-- Musical Note 'J' Shape -->
+  <g transform="translate(110, 85) scale(6.2)">
+    <path 
+      d="M26 8 C26 8 36 6 38 15 C33 13 28 15 28 17 V29 C28 35.6 22.6 41 16 41 C9.4 41 4 35.6 4 29 C4 23 8.8 18.2 14.8 18.2 C17.2 18.2 19.4 19 21.2 20.4 V8 Z" 
+      fill="url(#roseGrad)"
+      filter="url(#glow)"
+    />
+    <ellipse 
+      cx="14" 
+      cy="28" 
+      rx="5" 
+      ry="4" 
+      transform="rotate(-25 14 28)" 
+      fill="white" 
+      opacity="0.35" 
+    />
   </g>
-
-  <!-- Dot Accents -->
-  <circle cx="256" cy="410" r="6" fill="#FA233B"/>
 </svg>

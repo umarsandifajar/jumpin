@@ -17,6 +17,7 @@ import {
 import MarqueeText from './MarqueeText';
 import MiniVisualizer from './MiniVisualizer';
 import CompactLyrics from './CompactLyrics';
+import JumpInLogo from './JumpInLogo';
 
 export default function NowPlaying({
   track,
@@ -84,8 +85,8 @@ export default function NowPlaying({
 
         {/* Center: Brand Pill */}
         <div className="flex items-center space-x-1.5 px-3 py-1 rounded-full bg-black/30 backdrop-blur-xl border border-white/10">
-          <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
-          <span className="text-xs font-semibold tracking-wider uppercase text-white/80">JumpIn</span>
+          <JumpInLogo size={15} />
+          <span className="text-xs font-semibold tracking-wider uppercase text-white/90">Jump<span className="text-rose-500">In</span></span>
         </div>
 
         {/* Right: Mini Visualizer & Search Button */}

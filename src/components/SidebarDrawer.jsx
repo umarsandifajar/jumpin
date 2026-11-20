@@ -14,6 +14,7 @@ import {
   LogOut,
   LogIn
 } from 'lucide-react';
+import JumpInLogo from './JumpInLogo';
 
 export default function SidebarDrawer({ 
   isOpen, 
@@ -43,11 +44,11 @@ export default function SidebarDrawer({
       <aside className="relative w-[290px] max-w-[85vw] h-full bg-[#161618]/95 backdrop-blur-2xl border-r border-white/10 flex flex-col safe-top safe-bottom p-5 text-white z-10 shadow-2xl animate-slide-up">
         {/* Drawer Header */}
         <div className="flex items-center justify-between pb-4 border-b border-white/10">
-          <div className="flex items-center space-x-2">
-            <div className="w-7 h-7 rounded-lg bg-rose-500/20 border border-rose-500/40 flex items-center justify-center">
-              <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+          <div className="flex items-center space-x-2.5">
+            <div className="w-8 h-8 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center p-1">
+              <JumpInLogo size={22} />
             </div>
-            <h2 className="text-lg font-bold tracking-tight text-white">JumpIn</h2>
+            <h2 className="text-lg font-bold tracking-tight text-white">Jump<span className="text-rose-500">In</span></h2>
           </div>
           <button 
             onClick={onClose}
@@ -239,7 +240,7 @@ export default function SidebarDrawer({
 
         {/* Drawer Footer */}
         <div className="pt-3 border-t border-white/10 flex items-center justify-between text-xs text-white/40">
-          <span>JumpIn v1.3</span>
+          <span>v.13 - Fajar Umarsandi</span>
           <span>Apple PWA</span>
         </div>
       </aside>

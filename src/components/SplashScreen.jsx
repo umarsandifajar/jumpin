@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import JumpInLogo from './JumpInLogo';
 
 export default function SplashScreen({ onFinish }) {
   const [fading, setFading] = useState(false);
@@ -22,7 +23,7 @@ export default function SplashScreen({ onFinish }) {
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-black transition-opacity duration-400 ease-out ${
+      className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-black transition-opacity duration-400 ease-out select-none ${
         fading ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
     >
@@ -31,14 +32,9 @@ export default function SplashScreen({ onFinish }) {
 
       {/* Center Branding */}
       <div className="relative flex flex-col items-center space-y-4">
-        {/* Modern Apple-style Icon */}
-        <div className="relative w-20 h-20 rounded-3xl bg-gradient-to-br from-white/20 to-white/5 border border-white/20 shadow-2xl backdrop-blur-2xl flex items-center justify-center">
-          <div className="flex items-end space-x-1.5 h-8">
-            <span className="w-1.5 h-5 bg-white rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-            <span className="w-1.5 h-8 bg-gradient-to-t from-rose-500 to-white rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-            <span className="w-1.5 h-6 bg-white rounded-full animate-bounce"></span>
-            <span className="w-1.5 h-4 bg-white/70 rounded-full animate-bounce [animation-delay:-0.25s]"></span>
-          </div>
+        {/* Modern Apple-style Icon with Musical Note 'J' */}
+        <div className="relative w-22 h-22 rounded-3xl bg-gradient-to-br from-white/20 to-white/5 border border-white/20 shadow-2xl backdrop-blur-2xl flex items-center justify-center p-3">
+          <JumpInLogo size={46} />
         </div>
 
         {/* Brand Name */}
@@ -52,11 +48,16 @@ export default function SplashScreen({ onFinish }) {
         </div>
       </div>
 
-      {/* Subtle bottom indicator */}
-      <div className="absolute bottom-10 flex items-center space-x-1">
-        <div className="w-1.5 h-1.5 rounded-full bg-white/30 animate-pulse"></div>
-        <div className="w-1.5 h-1.5 rounded-full bg-white/50 animate-pulse [animation-delay:0.2s]"></div>
-        <div className="w-1.5 h-1.5 rounded-full bg-white/30 animate-pulse [animation-delay:0.4s]"></div>
+      {/* Bottom Center Credits: Fajar Umarsandi */}
+      <div className="absolute bottom-8 flex flex-col items-center space-y-2.5">
+        <div className="flex items-center space-x-1">
+          <div className="w-1.5 h-1.5 rounded-full bg-white/30 animate-pulse"></div>
+          <div className="w-1.5 h-1.5 rounded-full bg-white/60 animate-pulse [animation-delay:0.2s]"></div>
+          <div className="w-1.5 h-1.5 rounded-full bg-white/30 animate-pulse [animation-delay:0.4s]"></div>
+        </div>
+        <p className="text-[11px] font-medium tracking-widest text-white/50 uppercase">
+          Fajar Umarsandi
+        </p>
       </div>
     </div>
   );
