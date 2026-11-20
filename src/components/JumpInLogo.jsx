@@ -12,8 +12,8 @@ export default function JumpInLogo({ size = 24, className = '' }) {
     >
       <defs>
         <linearGradient id="jumpInLogoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#FF3B56" />
-          <stop offset="100%" stop-color="#FA233B" />
+          <stop offset="0%" stopColor="#FF3B56" />
+          <stop offset="100%" stopColor="#FA233B" />
         </linearGradient>
         <filter id="logoGlow" x="-20%" y="-20%" width="140%" height="140%">
           <feGaussianBlur stdDeviation="3" result="blur" />

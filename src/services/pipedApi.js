@@ -43,23 +43,63 @@ export const INITIAL_TRACKS = [
   }
 ];
 
+export const CURATED_YOUTUBE_PLAYLISTS = [
+  {
+    id: 'curated_indo_hits',
+    name: 'Top Hits Indonesia 2025',
+    itemCount: 25,
+    query: 'top songs indonesia 2025 viral',
+    cover: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'curated_chill_vibes',
+    name: 'Chill & Relax Vibes',
+    itemCount: 20,
+    query: 'chill acoustic songs cafe vibes',
+    cover: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'curated_global_hits',
+    name: 'Today\'s Top Global Hits',
+    itemCount: 30,
+    query: 'todays top hits pop 2025',
+    cover: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'curated_lofi_night',
+    name: 'Late Night Lofi Beats',
+    itemCount: 18,
+    query: 'lofi hip hop beats to sleep chill',
+    cover: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=500&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'curated_acoustic_sore',
+    name: 'Akustik Santai Sore',
+    itemCount: 22,
+    query: 'lagu akustik indonesia santai sore',
+    cover: 'https://images.unsplash.com/photo-1485579149621-3123dd979885?w=500&auto=format&fit=crop&q=80'
+  }
+];
+
+// Fetch categorized music from YouTube Music (Beranda, New, Charts, Albums)
+export async function fetchCategoryTracks(type) {
+  try {
+    const res = await fetch(`/api/search?type=${encodeURIComponent(type)}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) return data;
+    }
+  } catch (err) {
+    console.warn('fetchCategoryTracks error:', err);
+  }
+  return [];
+}
+
 // Search songs using Google official API first, then local backend, then fallback
 export async function searchSongs(query, googleToken = null) {
   if (!query || !query.trim()) return [];
 
-  // 1. If user has Google Token, search official YouTube Data API (fastest, most accurate)
-  if (googleToken) {
-    try {
-      const results = await searchYouTubeOfficial(query, googleToken);
-      if (results && results.length > 0) {
-        return results;
-      }
-    } catch (err) {
-      console.warn('Official YouTube search error:', err);
-    }
-  }
-
-  // 2. Try server search endpoint (/api/search)
+  // 1. Try server search endpoint (/api/search) first - fastest Innertube search
   try {
     const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
     if (res.ok) {
@@ -70,6 +110,18 @@ export async function searchSongs(query, googleToken = null) {
     }
   } catch (err) {
     console.warn('Server search failed:', err);
+  }
+
+  // 2. If user has Google Token, try official YouTube Data API
+  if (googleToken) {
+    try {
+      const results = await searchYouTubeOfficial(query, googleToken);
+      if (results && results.length > 0) {
+        return results;
+      }
+    } catch (err) {
+      console.warn('Official YouTube search error:', err);
+    }
   }
 
   // 3. Fallback filter from local tracks

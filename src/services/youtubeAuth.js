@@ -107,7 +107,7 @@ export async function searchYouTubeOfficial(query, token) {
   try {
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
     const res = await fetch(
-      `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoCategoryId=10&maxResults=25&q=${encodeURIComponent(query)}`,
+      `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=25&q=${encodeURIComponent(query)}`,
       { headers }
     );
 
@@ -131,6 +131,8 @@ export async function searchYouTubeOfficial(query, token) {
             };
           });
       }
+    } else {
+      console.warn('YouTube official API returned status:', res.status, '- Will fallback to server search');
     }
   } catch (err) {
     console.warn('Official YouTube search error:', err);
@@ -141,33 +143,47 @@ export async function searchYouTubeOfficial(query, token) {
 // Fetch YouTube Trending / New Releases (Explore / New)
 export async function fetchTrendingMusic(token) {
   try {
-    const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    const res = await fetch(
-      'https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&chart=mostPopular&videoCategoryId=10&maxResults=30',
-      { headers }
-    );
-    if (!res.ok) return [];
-    const data = await res.json();
-    if (!data.items) return [];
-
-    return data.items.map(item => {
-      const videoId = item.id;
-      const thumbs = item.snippet.thumbnails;
-      const cover = thumbs?.high?.url || thumbs?.medium?.url || thumbs?.default?.url || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
-      return {
-        id: videoId,
-        title: item.snippet.title,
-        artist: item.snippet.channelTitle || 'YouTube Artist',
-        album: 'YouTube Trending',
-        cover,
-        audioUrl: `/api/stream?id=${videoId}`,
-        isStream: true
-      };
-    });
+    if (token) {
+      const res = await fetch(
+        'https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&chart=mostPopular&regionCode=ID&videoCategoryId=10&maxResults=30',
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        if (data.items && data.items.length > 0) {
+          return data.items.map(item => {
+            const videoId = item.id;
+            const thumbs = item.snippet.thumbnails;
+            const cover = thumbs?.high?.url || thumbs?.medium?.url || thumbs?.default?.url || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+            return {
+              id: videoId,
+              title: item.snippet.title,
+              artist: item.snippet.channelTitle || 'YouTube Artist',
+              album: 'YouTube Trending',
+              cover,
+              audioUrl: `/api/stream?id=${videoId}`,
+              isStream: true
+            };
+          });
+        }
+      }
+    }
   } catch (err) {
-    console.warn('Trending music error:', err);
-    return [];
+    console.warn('Google trending music error:', err);
   }
+
+  // Reliable Fallback to Innertube /api/search?type=trending
+  try {
+    const fallbackRes = await fetch('/api/search?type=trending');
+    if (fallbackRes.ok) {
+      const data = await fallbackRes.json();
+      if (Array.isArray(data) && data.length > 0) return data;
+    }
+  } catch (fErr) {
+    console.warn('Trending fallback failed:', fErr);
+  }
+
+  return [];
 }
 
 // Fetch all existing user playlists from YouTube Music / YouTube

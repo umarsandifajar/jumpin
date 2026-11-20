@@ -65,12 +65,77 @@ export function youtubeAudioPlugin() {
       server.middlewares.use(async (req, res, next) => {
         const parsedUrl = url.parse(req.url, true);
 
-        // 1. Search YouTube endpoint: /api/search?q=...
+        // 1. Search YouTube endpoint: /api/search?q=... or ?type=...
         if (parsedUrl.pathname === '/api/search') {
-          const query = parsedUrl.query.q;
-          if (!query || !query.trim()) {
-            res.writeHead(400, { 'Content-Type': 'application/json' });
-            return res.end(JSON.stringify({ error: 'Missing query parameter q' }));
+          let query = parsedUrl.query.q;
+          const type = parsedUrl.query.type;
+
+          if (!query) {
+            if (type === 'beranda' || type === 'home') {
+              query = 'top songs indonesia 2025 viral';
+            } else if (type === 'new' || type === 'trending') {
+              query = 'lagu terbaru 2025 new release';
+            } else if (type === 'charts') {
+              query = 'top 50 indonesia viral spotify youtube';
+            } else if (type === 'albums') {
+              query = 'best album compilation songs';
+            } else {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              return res.end(JSON.stringify({ error: 'Missing query parameter q or valid type' }));
+            }
+          }
+
+          // Try YouTube Innertube search first (instant 100ms)
+          try {
+            const ytRes = await fetch('https://www.youtube.com/youtubei/v1/search', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+              },
+              body: JSON.stringify({
+                context: {
+                  client: { clientName: 'WEB', clientVersion: '2.20231204.01.00', hl: 'id', gl: 'ID' }
+                },
+                query: query
+              })
+            });
+
+            if (ytRes.ok) {
+              const data = await ytRes.json();
+              const sections = data?.contents?.twoColumnSearchResultsRenderer?.primaryContents?.sectionListRenderer?.contents || [];
+              const items = [];
+
+              for (const s of sections) {
+                for (const item of (s?.itemSectionRenderer?.contents || [])) {
+                  const v = item.videoRenderer;
+                  if (v && v.videoId) {
+                    const thumbs = v.thumbnail?.thumbnails || [];
+                    const bestThumb = thumbs[thumbs.length - 1]?.url || `https://i.ytimg.com/vi/${v.videoId}/hqdefault.jpg`;
+                    items.push({
+                      id: v.videoId,
+                      title: v.title?.runs?.[0]?.text || 'Unknown Title',
+                      artist: v.ownerText?.runs?.[0]?.text || v.shortBylineText?.runs?.[0]?.text || 'YouTube Artist',
+                      album: type ? `YouTube ${type.toUpperCase()}` : 'YouTube Music',
+                      cover: bestThumb,
+                      duration: v.lengthText?.simpleText || '',
+                      audioUrl: `/api/stream?id=${v.videoId}`,
+                      isStream: true
+                    });
+                  }
+                }
+              }
+
+              if (items.length > 0) {
+                res.writeHead(200, {
+                  'Content-Type': 'application/json',
+                  'Access-Control-Allow-Origin': '*'
+                });
+                return res.end(JSON.stringify(items));
+              }
+            }
+          } catch (innerErr) {
+            console.warn('Innertube local search error, falling back to yt-dlp:', innerErr);
           }
 
           try {

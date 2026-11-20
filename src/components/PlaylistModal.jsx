@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Play, Shuffle, Heart, Music, Trash2 } from 'lucide-react';
+import { X, Play, Shuffle, Heart, Music, Loader2 } from 'lucide-react';
 
 export default function PlaylistModal({
   isOpen,
@@ -7,6 +7,7 @@ export default function PlaylistModal({
   title,
   subtitle,
   tracks = [],
+  loading = false,
   onPlayTrack,
   onPlayAll,
   isLikedView = false
@@ -35,7 +36,7 @@ export default function PlaylistModal({
       </div>
 
       {/* Action Buttons: Play All & Shuffle */}
-      {tracks.length > 0 && (
+      {!loading && tracks.length > 0 && (
         <div className="flex items-center space-x-3 py-4">
           <button
             onClick={() => {
@@ -62,7 +63,12 @@ export default function PlaylistModal({
 
       {/* Track List */}
       <div className="flex-1 overflow-y-auto space-y-2 pb-10">
-        {tracks.length === 0 ? (
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-28 text-white/50">
+            <Loader2 size={36} className="animate-spin text-rose-500 mb-3" />
+            <p className="text-sm font-medium">Memuat lagu dari YouTube...</p>
+          </div>
+        ) : tracks.length === 0 ? (
           <div className="text-center py-24 text-white/40 text-sm">
             {isLikedView ? (
               <>
@@ -99,7 +105,7 @@ export default function PlaylistModal({
                 <p className="text-sm font-semibold truncate text-white">{item.title}</p>
                 <p className="text-xs text-white/60 truncate mt-0.5">{item.artist}</p>
               </div>
-              <button className="p-2 rounded-full bg-white/10 text-white/70 group-hover:bg-rose-500 group-hover:text-white transition">
+              <button className="p-2 rounded-full bg-white/10 text-white/80 group-hover:bg-rose-500 group-hover:text-white transition shrink-0 ml-2">
                 <Play size={14} className="fill-current" />
               </button>
             </div>

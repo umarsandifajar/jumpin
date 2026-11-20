@@ -6,7 +6,13 @@ import QueueModal from './components/QueueModal';
 import SidebarDrawer from './components/SidebarDrawer';
 import AuthModal from './components/AuthModal';
 import PlaylistModal from './components/PlaylistModal';
-import { INITIAL_TRACKS, getAudioStreamUrl } from './services/pipedApi';
+import { 
+  INITIAL_TRACKS, 
+  getAudioStreamUrl, 
+  CURATED_YOUTUBE_PLAYLISTS, 
+  fetchCategoryTracks, 
+  searchSongs 
+} from './services/pipedApi';
 import { 
   getSavedSession, 
   logoutGoogle, 
@@ -264,17 +270,46 @@ export default function App() {
     }
   };
 
-  // Open a specific user YouTube playlist
-  const handleSelectPlaylist = async (playlist) => {
-    setSelectedPlaylist(playlist);
+  // Open Beranda (Home)
+  const handleOpenBeranda = async () => {
+    setSelectedPlaylist({ name: 'Beranda YouTube (Pilihan Terpopuler)' });
     setIsPlaylistModalOpen(true);
     setLoadingPlaylist(true);
-
     try {
-      const tracks = await fetchPlaylistTracks(googleToken, playlist.id);
+      const tracks = await fetchCategoryTracks('beranda');
       setPlaylistTracks(tracks);
     } catch (err) {
-      console.error('Fetch playlist items error:', err);
+      console.error('Fetch beranda error:', err);
+    } finally {
+      setLoadingPlaylist(false);
+    }
+  };
+
+  // Open New Releases
+  const handleOpenNew = async () => {
+    setSelectedPlaylist({ name: 'Rilis Baru di YouTube Music' });
+    setIsPlaylistModalOpen(true);
+    setLoadingPlaylist(true);
+    try {
+      const tracks = await fetchCategoryTracks('new');
+      setPlaylistTracks(tracks);
+    } catch (err) {
+      console.error('Fetch new releases error:', err);
+    } finally {
+      setLoadingPlaylist(false);
+    }
+  };
+
+  // Open Albums & Charts
+  const handleOpenAlbums = async () => {
+    setSelectedPlaylist({ name: 'Album & Tangga Lagu Terpopuler' });
+    setIsPlaylistModalOpen(true);
+    setLoadingPlaylist(true);
+    try {
+      const tracks = await fetchCategoryTracks('charts');
+      setPlaylistTracks(tracks);
+    } catch (err) {
+      console.error('Fetch albums/charts error:', err);
     } finally {
       setLoadingPlaylist(false);
     }
@@ -282,7 +317,7 @@ export default function App() {
 
   // Open YouTube Trending / Explore Music
   const handleOpenTrending = async () => {
-    setSelectedPlaylist({ name: 'Trending & Baru di YouTube' });
+    setSelectedPlaylist({ name: 'Trending di YouTube' });
     setIsPlaylistModalOpen(true);
     setLoadingPlaylist(true);
     try {
@@ -295,19 +330,48 @@ export default function App() {
     }
   };
 
-  // Open Subscribed Artists
-  const handleOpenArtists = async () => {
+  // Open a specific user or curated YouTube playlist
+  const handleSelectPlaylist = async (playlist) => {
+    setSelectedPlaylist(playlist);
+    setIsPlaylistModalOpen(true);
+    setLoadingPlaylist(true);
+
     try {
-      const artists = await fetchSubscribedArtists(googleToken);
-      if (artists && artists.length > 0) {
-        // Open search for the first top subscribed artist or trending
-        setIsSearchOpen(true);
+      if (playlist.query) {
+        const tracks = await searchSongs(playlist.query, googleToken);
+        setPlaylistTracks(tracks);
       } else {
-        setIsSearchOpen(true);
+        const tracks = await fetchPlaylistTracks(googleToken, playlist.id);
+        setPlaylistTracks(tracks);
       }
     } catch (err) {
+      console.error('Fetch playlist items error:', err);
+    } finally {
+      setLoadingPlaylist(false);
+    }
+  };
+
+  // Open Subscribed Artists
+  const handleOpenArtists = async () => {
+    setSelectedPlaylist({ name: 'Artis & Musisi Pilihan' });
+    setIsPlaylistModalOpen(true);
+    setLoadingPlaylist(true);
+    try {
+      let tracks = [];
+      if (googleToken) {
+        const artists = await fetchSubscribedArtists(googleToken);
+        if (artists && artists.length > 0) {
+          tracks = await searchSongs(artists[0].name + ' best songs', googleToken);
+        }
+      }
+      if (tracks.length === 0) {
+        tracks = await searchSongs('Bernadya Mahalini Juicy Luicy Hindia Coldplay', googleToken);
+      }
+      setPlaylistTracks(tracks);
+    } catch (err) {
       console.error('Fetch artists error:', err);
-      setIsSearchOpen(true);
+    } finally {
+      setLoadingPlaylist(false);
     }
   };
 
@@ -365,13 +429,17 @@ export default function App() {
         isOpen={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
         onOpenSearch={() => setIsSearchOpen(true)}
+        onOpenBeranda={handleOpenBeranda}
+        onOpenNew={handleOpenNew}
+        onOpenTrending={handleOpenTrending}
+        onOpenAlbums={handleOpenAlbums}
         onOpenQueue={() => setIsQueueOpen(true)}
         onOpenLikedMusic={() => setIsLikedModalOpen(true)}
-        onOpenTrending={handleOpenTrending}
         onOpenArtists={handleOpenArtists}
         onOpenAuth={() => setIsAuthOpen(true)}
         onSelectPlaylist={handleSelectPlaylist}
         playlists={userPlaylists}
+        curatedPlaylists={CURATED_YOUTUBE_PLAYLISTS}
         user={user}
         onSignOut={handleSignOut}
         likedTracksCount={likedTracks.length}
@@ -411,8 +479,9 @@ export default function App() {
         isOpen={isPlaylistModalOpen}
         onClose={() => setIsPlaylistModalOpen(false)}
         title={selectedPlaylist?.name || "YouTube Playlist"}
-        subtitle={`${playlistTracks.length} songs from YouTube`}
+        subtitle={loadingPlaylist ? "Memuat lagu..." : `${playlistTracks.length} songs from YouTube`}
         tracks={playlistTracks}
+        loading={loadingPlaylist}
         isLikedView={false}
         onPlayTrack={handleSelectTrack}
         onPlayAll={handlePlayAll}
