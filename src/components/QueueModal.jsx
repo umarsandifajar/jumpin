@@ -19,7 +19,7 @@ export default function QueueModal({ isOpen, onClose, queue, currentTrack, onSel
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto mt-4 space-y-2 pb-10">
+      <div className="flex-1 overflow-y-auto custom-scrollbar mt-4 space-y-2 pb-10 select-none">
         {queue.map((item, index) => {
           const isCurrent = currentTrack.id === item.id;
           return (

@@ -49,6 +49,7 @@ export default function App() {
   const [loadingPlaylist, setLoadingPlaylist] = useState(false);
 
   const audioRef = useRef(null);
+  const ytPlayerRef = useRef(null);
   const currentTrack = queue[currentIndex] || INITIAL_TRACKS[0];
 
   // Restore Google Session on mount
@@ -62,71 +63,93 @@ export default function App() {
     }
   }, []);
 
-  // Initialize Audio element and event listeners
+  // Initialize YouTube Iframe Player Engine (Instant direct stream, no 403, no proxy lag)
   useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
+    const initYT = () => {
+      if (!window.YT || !window.YT.Player || ytPlayerRef.current) return;
 
-    const handleTimeUpdate = () => {
-      if (audio.currentTime > 0) {
-        setCurrentTime(audio.currentTime);
+      try {
+        ytPlayerRef.current = new window.YT.Player('jumpin-yt-engine', {
+          height: '200',
+          width: '200',
+          videoId: currentTrack.id,
+          playerVars: {
+            autoplay: 0,
+            controls: 0,
+            disablekb: 1,
+            fs: 0,
+            modestbranding: 1,
+            playsinline: 1,
+            rel: 0,
+            origin: window.location.origin
+          },
+          events: {
+            onReady: (event) => {
+              event.target.setVolume(volume * 100);
+            },
+            onStateChange: (event) => {
+              // 1: PLAYING, 2: PAUSED, 0: ENDED, 3: BUFFERING
+              if (event.data === 1) {
+                setIsPlaying(true);
+                if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
+              } else if (event.data === 2) {
+                setIsPlaying(false);
+                if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
+              } else if (event.data === 0) {
+                handleNext();
+              }
+            },
+            onError: (err) => {
+              console.warn('YouTube Engine Error:', err);
+            }
+          }
+        });
+      } catch (err) {
+        console.warn('Failed to initialize YouTube Player:', err);
       }
     };
-    const handleLoadedMetadata = () => {
-      if (audio.duration && !isNaN(audio.duration)) {
-        setDuration(audio.duration);
-      }
-    };
-    const handleEnded = () => handleNext();
-    const handleOnPlay = () => {
-      setIsPlaying(true);
-      if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
-    };
-    const handleOnPause = () => {
-      setIsPlaying(false);
-      if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
-    };
 
-    audio.addEventListener('timeupdate', handleTimeUpdate);
-    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
-    audio.addEventListener('ended', handleEnded);
-    audio.addEventListener('play', handleOnPlay);
-    audio.addEventListener('pause', handleOnPause);
+    if (window.YT && window.YT.Player) {
+      initYT();
+    } else {
+      window.onYouTubeIframeAPIReady = initYT;
+    }
+  }, []);
 
-    return () => {
-      audio.removeEventListener('timeupdate', handleTimeUpdate);
-      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
-      audio.removeEventListener('ended', handleEnded);
-      audio.removeEventListener('play', handleOnPlay);
-      audio.removeEventListener('pause', handleOnPause);
-    };
-  }, [currentIndex, queue]);
-
-  // Load stream / audio URL whenever current track changes
+  // Sync track changes with YouTube Engine & MediaSession
   useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    const loadTrack = async () => {
-      let src = currentTrack.audioUrl;
-
-      // If YouTube stream track, resolve stream URL from local proxy
-      if (currentTrack.isStream && !src) {
-        src = await getAudioStreamUrl(currentTrack.id);
-      }
-
-      if (src) {
-        audio.src = src;
-        audio.volume = isMuted ? 0 : volume;
+    if (ytPlayerRef.current && ytPlayerRef.current.loadVideoById) {
+      try {
+        ytPlayerRef.current.loadVideoById(currentTrack.id);
         if (isPlaying) {
-          audio.play().catch(console.warn);
+          ytPlayerRef.current.playVideo();
         }
+      } catch (err) {
+        console.warn('Error loading video into YT Engine:', err);
       }
-    };
-
-    loadTrack();
+    }
     updateMediaSession(currentTrack);
   }, [currentIndex, currentTrack.id]);
+
+  // Smooth Scrubber Interval from YouTube Player Engine
+  useEffect(() => {
+    let interval = null;
+    if (isPlaying) {
+      interval = setInterval(() => {
+        if (ytPlayerRef.current && ytPlayerRef.current.getCurrentTime) {
+          try {
+            const cur = ytPlayerRef.current.getCurrentTime() || 0;
+            const dur = ytPlayerRef.current.getDuration() || 0;
+            if (!isNaN(cur) && cur >= 0) setCurrentTime(cur);
+            if (!isNaN(dur) && dur > 0) setDuration(dur);
+          } catch {
+            // ignore periodic cross-frame read issues
+          }
+        }
+      }, 350);
+    }
+    return () => clearInterval(interval);
+  }, [isPlaying]);
 
   // iOS Lock Screen & Dynamic Island MediaSession Integration
   const updateMediaSession = (track) => {
@@ -146,9 +169,8 @@ export default function App() {
       navigator.mediaSession.setActionHandler('previoustrack', () => handlePrev());
       navigator.mediaSession.setActionHandler('nexttrack', () => handleNext());
       navigator.mediaSession.setActionHandler('seekto', (details) => {
-        if (details.seekTime !== undefined && audioRef.current) {
-          audioRef.current.currentTime = details.seekTime;
-          setCurrentTime(details.seekTime);
+        if (details.seekTime !== undefined) {
+          handleSeek(details.seekTime);
         }
       });
     }
@@ -158,19 +180,21 @@ export default function App() {
     setIsPlaying(true);
     if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
 
+    if (ytPlayerRef.current && ytPlayerRef.current.playVideo) {
+      ytPlayerRef.current.playVideo();
+    }
     if (audioRef.current) {
-      if (!audioRef.current.src || !audioRef.current.src.includes(currentTrack.id)) {
-        audioRef.current.src = currentTrack.audioUrl;
-      }
-      audioRef.current.play().catch((err) => {
-        console.warn('Playback error or gesture needed:', err);
-      });
+      audioRef.current.play().catch(() => {});
     }
   };
 
   const handlePause = () => {
     setIsPlaying(false);
     if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
+
+    if (ytPlayerRef.current && ytPlayerRef.current.pauseVideo) {
+      ytPlayerRef.current.pauseVideo();
+    }
     if (audioRef.current) {
       audioRef.current.pause();
     }
@@ -187,40 +211,49 @@ export default function App() {
   const handleNext = () => {
     const nextIdx = (currentIndex + 1) % queue.length;
     setCurrentIndex(nextIdx);
+    setCurrentTime(0);
   };
 
   const handlePrev = () => {
     if (currentTime > 3) {
-      if (audioRef.current) audioRef.current.currentTime = 0;
-      setCurrentTime(0);
+      handleSeek(0);
     } else {
       const prevIdx = (currentIndex - 1 + queue.length) % queue.length;
       setCurrentIndex(prevIdx);
+      setCurrentTime(0);
     }
   };
 
   const handleSeek = (newTime) => {
-    if (audioRef.current) {
-      audioRef.current.currentTime = newTime;
-      setCurrentTime(newTime);
+    setCurrentTime(newTime);
+    if (ytPlayerRef.current && ytPlayerRef.current.seekTo) {
+      try {
+        ytPlayerRef.current.seekTo(newTime, true);
+      } catch (err) {
+        console.warn('Seek error:', err);
+      }
     }
   };
 
   const handleVolumeChange = (newVol) => {
     setVolume(newVol);
     setIsMuted(false);
-    if (audioRef.current) {
-      audioRef.current.volume = newVol;
+    if (ytPlayerRef.current && ytPlayerRef.current.setVolume) {
+      ytPlayerRef.current.setVolume(newVol * 100);
     }
   };
 
   const handleToggleMute = () => {
     if (isMuted) {
       setIsMuted(false);
-      if (audioRef.current) audioRef.current.volume = volume;
+      if (ytPlayerRef.current && ytPlayerRef.current.setVolume) {
+        ytPlayerRef.current.setVolume(volume * 100);
+      }
     } else {
       setIsMuted(true);
-      if (audioRef.current) audioRef.current.volume = 0;
+      if (ytPlayerRef.current && ytPlayerRef.current.setVolume) {
+        ytPlayerRef.current.setVolume(0);
+      }
     }
   };
 
@@ -235,11 +268,19 @@ export default function App() {
     }
     setIsPlaying(true);
     setCurrentTime(0);
+
+    if (ytPlayerRef.current && ytPlayerRef.current.loadVideoById) {
+      try {
+        ytPlayerRef.current.loadVideoById(selectedTrack.id);
+        ytPlayerRef.current.playVideo();
+      } catch (err) {
+        console.warn('Error loading video on select:', err);
+      }
+    }
+
+    // Trigger silent audio play inside user touch gesture for iOS Lock Screen compliance
     if (audioRef.current) {
-      audioRef.current.src = selectedTrack.audioUrl;
-      audioRef.current.play().catch((err) => {
-        console.warn('Playback waiting for user gesture or stream buffering:', err);
-      });
+      audioRef.current.play().catch(() => {});
     }
   };
 
@@ -395,8 +436,18 @@ export default function App() {
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-black text-white">
-      {/* Hidden HTML5 Audio Element for iOS background audio compliance */}
-      <audio ref={audioRef} playsInline preload="auto" />
+      {/* Silent HTML5 Audio Element for iOS background audio compliance */}
+      <audio 
+        ref={audioRef} 
+        playsInline 
+        loop 
+        src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA" 
+      />
+
+      {/* Hidden YouTube Engine for direct audio streaming without 403 or server timeouts */}
+      <div className="fixed -top-[9999px] -left-[9999px] w-[200px] h-[200px] opacity-0 pointer-events-none overflow-hidden z-[-1]">
+        <div id="jumpin-yt-engine"></div>
+      </div>
 
       {/* 1-Second Apple-style Splash Screen */}
       {showSplash && (
@@ -470,6 +521,8 @@ export default function App() {
         subtitle="Imported from YouTube Music"
         tracks={likedTracks}
         isLikedView={true}
+        currentTrackId={currentTrack.id}
+        isPlaying={isPlaying}
         onPlayTrack={handleSelectTrack}
         onPlayAll={handlePlayAll}
       />
@@ -483,6 +536,8 @@ export default function App() {
         tracks={playlistTracks}
         loading={loadingPlaylist}
         isLikedView={false}
+        currentTrackId={currentTrack.id}
+        isPlaying={isPlaying}
         onPlayTrack={handleSelectTrack}
         onPlayAll={handlePlayAll}
       />
