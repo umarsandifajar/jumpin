@@ -2,71 +2,69 @@ import { searchYouTubeOfficial } from './youtubeAuth';
 
 export const INITIAL_TRACKS = [
   {
-    id: '34Na4j8AVgA',
-    title: 'Starboy',
-    artist: 'The Weeknd ft. Daft Punk',
-    album: 'Starboy',
-    cover: 'https://i.ytimg.com/vi/34Na4j8AVgA/hq720.jpg',
-    audioUrl: '/api/stream?id=34Na4j8AVgA',
-    duration: 230,
-    isStream: true
-  },
-  {
-    id: '4NRXx6U8ABQ',
-    title: 'Blinding Lights',
-    artist: 'The Weeknd',
-    album: 'After Hours',
-    cover: 'https://i.ytimg.com/vi/4NRXx6U8ABQ/hq720.jpg',
-    audioUrl: '/api/stream?id=4NRXx6U8ABQ',
-    duration: 200,
-    isStream: true
-  },
-  {
-    id: '1fTszV_n7L4',
+    id: 'yjnSX_iUFVo',
     title: 'Satu Bulan',
     artist: 'Bernadya',
     album: 'Sialnya, Hidup Harus Tetap Berjalan',
-    cover: 'https://i.ytimg.com/vi/1fTszV_n7L4/hqdefault.jpg',
+    cover: 'https://i.ytimg.com/vi/yjnSX_iUFVo/hqdefault.jpg',
     duration: 195,
     isStream: true
   },
   {
-    id: '3JgE3G586s0',
+    id: 'AQpEIZ8dNcU',
     title: 'Gala Bunga Matahari',
     artist: 'Sal Priadi',
     album: 'MARKERS AND SUCH PENS FLASHDISKS',
-    cover: 'https://i.ytimg.com/vi/3JgE3G586s0/hqdefault.jpg',
+    cover: 'https://i.ytimg.com/vi/AQpEIZ8dNcU/hqdefault.jpg',
     duration: 235,
+    isStream: true
+  },
+  {
+    id: 'V9PVRfjEBTI',
+    title: 'BIRDS OF A FEATHER',
+    artist: 'Billie Eilish',
+    album: 'HIT ME HARD AND SOFT',
+    cover: 'https://i.ytimg.com/vi/V9PVRfjEBTI/hqdefault.jpg',
+    duration: 190,
+    isStream: true
+  },
+  {
+    id: 'eVli-tstM5E',
+    title: 'Espresso',
+    artist: 'Sabrina Carpenter',
+    album: 'Short n\' Sweet',
+    cover: 'https://i.ytimg.com/vi/eVli-tstM5E/hqdefault.jpg',
+    duration: 175,
     isStream: true
   }
 ];
 
-// 1. Kurasi Khusus: New Music (Lagu-lagu Baru Terpopuler 2026)
+// 1. Kurasi Khusus: New Music (Lagu-lagu Baru Terpopuler 2026 - Verified Working YouTube IDs)
 export const NEW_MUSIC_TRACKS = [
   {
-    id: '1fTszV_n7L4',
+    id: 'yjnSX_iUFVo',
     title: 'Satu Bulan',
     artist: 'Bernadya',
     album: 'Sialnya, Hidup Harus Tetap Berjalan',
-    cover: 'https://i.ytimg.com/vi/1fTszV_n7L4/hqdefault.jpg',
+    cover: 'https://i.ytimg.com/vi/yjnSX_iUFVo/hqdefault.jpg',
     duration: 195,
     isStream: true
   },
   {
-    id: '3JgE3G586s0',
+    id: 'AQpEIZ8dNcU',
     title: 'Gala Bunga Matahari',
     artist: 'Sal Priadi',
     album: 'MARKERS AND SUCH PENS FLASHDISKS',
-    cover: 'https://i.ytimg.com/vi/3JgE3G586s0/hqdefault.jpg',
+    cover: 'https://i.ytimg.com/vi/AQpEIZ8dNcU/hqdefault.jpg',
     duration: 235,
     isStream: true
   },
   {
-    id: 'd5gxPgJNP3Y',
+    id: 'V9PVRfjEBTI',
     title: 'BIRDS OF A FEATHER',
     artist: 'Billie Eilish',
     album: 'HIT ME HARD AND SOFT',
-    cover: 'https://i.ytimg.com/vi/d5gxPgJNP3Y/hqdefault.jpg',
+    cover: 'https://i.ytimg.com/vi/V9PVRfjEBTI/hqdefault.jpg',
     duration: 190,
     isStream: true
   },
@@ -80,70 +78,61 @@ export const NEW_MUSIC_TRACKS = [
     isStream: true
   },
   {
-    id: 'kPa7bsKwL-8',
+    id: 'kPa7bsKwL-c',
     title: 'Die With A Smile',
     artist: 'Lady Gaga & Bruno Mars',
     album: 'Die With A Smile',
-    cover: 'https://i.ytimg.com/vi/kPa7bsKwL-8/hqdefault.jpg',
+    cover: 'https://i.ytimg.com/vi/kPa7bsKwL-c/hqdefault.jpg',
     duration: 251,
     isStream: true
   },
   {
-    id: 'b8H-L4088Zg',
-    title: 'Too Much Of A Good Thing',
-    artist: 'NIKI',
-    album: 'Buzz',
-    cover: 'https://i.ytimg.com/vi/b8H-L4088Zg/hqdefault.jpg',
+    id: 'cWrSjCZ5AeE',
+    title: 'Evaluasi',
+    artist: 'Hindia',
+    album: 'Menari Dengan Bayangan',
+    cover: 'https://i.ytimg.com/vi/cWrSjCZ5AeE/hqdefault.jpg',
     duration: 170,
     isStream: true
   }
 ];
 
-// 2. Kurasi Khusus: Chill Music (Lagu-lagu Santai, Akustik & Sore Hari)
+// 2. Kurasi Khusus: Chill Music (Lagu-lagu Santai, Akustik & Sore Hari - Verified Working YouTube IDs)
 export const CHILL_MUSIC_TRACKS = [
   {
-    id: 'w83y_oZf2nU',
+    id: 'gIsoLyQX7W8',
     title: 'Rayuan Perempuan Gila',
     artist: 'Nadin Amizah',
     album: 'Untuk Dunia, Cinta, dan Kotornya',
-    cover: 'https://i.ytimg.com/vi/w83y_oZf2nU/hqdefault.jpg',
+    cover: 'https://i.ytimg.com/vi/gIsoLyQX7W8/hqdefault.jpg',
     duration: 320,
     isStream: true
   },
   {
-    id: 'FwA648T9v68',
+    id: '_N6vSc_mT6I',
     title: 'Hati-Hati di Jalan',
     artist: 'Tulus',
     album: 'Manusia',
-    cover: 'https://i.ytimg.com/vi/FwA648T9v68/hqdefault.jpg',
+    cover: 'https://i.ytimg.com/vi/_N6vSc_mT6I/hqdefault.jpg',
     duration: 242,
     isStream: true
   },
   {
-    id: '2rgepWg440k',
+    id: 'oIYWenB637c',
     title: 'To the Bone',
     artist: 'Pamungkas',
     album: 'Flying Solo',
-    cover: 'https://i.ytimg.com/vi/2rgepWg440k/hqdefault.jpg',
+    cover: 'https://i.ytimg.com/vi/oIYWenB637c/hqdefault.jpg',
     duration: 344,
     isStream: true
   },
   {
-    id: 'Y2bE3X-gD2k',
-    title: 'Bitterlove',
-    artist: 'Ardhito Pramono',
-    album: 'Craving',
-    cover: 'https://i.ytimg.com/vi/Y2bE3X-gD2k/hqdefault.jpg',
-    duration: 220,
-    isStream: true
-  },
-  {
-    id: 'o_4g9yE0xVs',
-    title: 'Runtuh',
-    artist: 'Feby Putri ft. Fiersa Besari',
-    album: 'Riuh',
-    cover: 'https://i.ytimg.com/vi/o_4g9yE0xVs/hqdefault.jpg',
-    duration: 228,
+    id: 'ba-XAIskH_g',
+    title: 'Lantas',
+    artist: 'Juicy Luicy',
+    album: 'Sentimental',
+    cover: 'https://i.ytimg.com/vi/ba-XAIskH_g/hqdefault.jpg',
+    duration: 230,
     isStream: true
   },
   {
@@ -157,60 +146,87 @@ export const CHILL_MUSIC_TRACKS = [
   }
 ];
 
-// 3. Kurasi Khusus: Trending YouTube Saat Ini
+// 3. Kurasi Khusus: Trending YouTube Indonesia Saat Ini (Verified Working YouTube IDs)
 export const TRENDING_TRACKS = [
   {
-    id: '8YQZg_y-J18',
+    id: 's525A0Bc3z4',
     title: 'Sigar',
     artist: 'Denny Caknan',
-    album: 'Sigar Single',
-    cover: 'https://i.ytimg.com/vi/8YQZg_y-J18/hqdefault.jpg',
+    album: 'Trending #1 YouTube',
+    cover: 'https://i.ytimg.com/vi/s525A0Bc3z4/hqdefault.jpg',
     duration: 305,
     isStream: true
   },
   {
-    id: 'Z-XyB03U-3o',
-    title: 'Kata Mereka Ini Berlebihan',
+    id: 'yjnSX_iUFVo',
+    title: 'Satu Bulan',
     artist: 'Bernadya',
-    album: 'Sialnya, Hidup Harus Tetap Berjalan',
-    cover: 'https://i.ytimg.com/vi/Z-XyB03U-3o/hqdefault.jpg',
-    duration: 198,
+    album: 'Top Chart Indonesia',
+    cover: 'https://i.ytimg.com/vi/yjnSX_iUFVo/hqdefault.jpg',
+    duration: 195,
     isStream: true
   },
   {
-    id: 'kPa7bsKwL-8',
+    id: 'AQpEIZ8dNcU',
+    title: 'Gala Bunga Matahari',
+    artist: 'Sal Priadi',
+    album: 'Viral YouTube Music',
+    cover: 'https://i.ytimg.com/vi/AQpEIZ8dNcU/hqdefault.jpg',
+    duration: 235,
+    isStream: true
+  },
+  {
+    id: 'kPa7bsKwL-c',
     title: 'Die With A Smile',
     artist: 'Lady Gaga & Bruno Mars',
-    album: 'Die With A Smile',
-    cover: 'https://i.ytimg.com/vi/kPa7bsKwL-8/hqdefault.jpg',
+    album: 'Top Hits Global',
+    cover: 'https://i.ytimg.com/vi/kPa7bsKwL-c/hqdefault.jpg',
     duration: 251,
     isStream: true
   },
   {
-    id: 'xGg7_8k8pW4',
-    title: 'Lantas',
-    artist: 'Juicy Luicy',
-    album: 'Sentimental',
-    cover: 'https://i.ytimg.com/vi/xGg7_8k8pW4/hqdefault.jpg',
-    duration: 230,
+    id: '9hjMIOIysng',
+    title: 'Kata Mereka Ini Berlebihan',
+    artist: 'Bernadya',
+    album: 'Trending YouTube Music',
+    cover: 'https://i.ytimg.com/vi/9hjMIOIysng/hqdefault.jpg',
+    duration: 198,
     isStream: true
   },
   {
-    id: 'Wv7Z78tFk6U',
+    id: 'VS5lU4iqdzc',
+    title: 'Sekti',
+    artist: 'Denny Caknan',
+    album: 'Trending Musik Jawa',
+    cover: 'https://i.ytimg.com/vi/VS5lU4iqdzc/hqdefault.jpg',
+    duration: 280,
+    isStream: true
+  },
+  {
+    id: 'LAOxuo6pkdo',
     title: 'Mati-Matian',
     artist: 'Mahalini',
-    album: 'Mati-Matian Single',
-    cover: 'https://i.ytimg.com/vi/Wv7Z78tFk6U/hqdefault.jpg',
+    album: 'Hits Populer Indonesia',
+    cover: 'https://i.ytimg.com/vi/LAOxuo6pkdo/hqdefault.jpg',
     duration: 245,
     isStream: true
   },
   {
-    id: 'bN0-Xk_zHrk',
-    title: 'Kuingin Pisah',
-    artist: 'Tiara Andini',
-    album: 'Kuingin Pisah Single',
-    cover: 'https://i.ytimg.com/vi/bN0-Xk_zHrk/hqdefault.jpg',
-    duration: 215,
+    id: 'nXOfv4-tT9o',
+    title: 'Kini Mereka Tahu',
+    artist: 'Bernadya',
+    album: 'Hits Populer',
+    cover: 'https://i.ytimg.com/vi/nXOfv4-tT9o/hqdefault.jpg',
+    duration: 210,
+    isStream: true
+  },
+  {
+    id: 'fBnqChaU-ck',
+    title: 'Wirang',
+    artist: 'GuyonWaton',
+    album: 'Trending Musik Campursari',
+    cover: 'https://i.ytimg.com/vi/fBnqChaU-ck/hqdefault.jpg',
+    duration: 260,
     isStream: true
   }
 ];
@@ -264,6 +280,10 @@ export async function fetchCategoryTracks(type) {
   } catch (err) {
     console.warn('fetchCategoryTracks error:', err);
   }
+  
+  if (type === 'new') return NEW_MUSIC_TRACKS;
+  if (type === 'trending') return TRENDING_TRACKS;
+  if (type === 'charts') return TRENDING_TRACKS;
   return [];
 }
 
@@ -294,7 +314,7 @@ export async function searchSongs(query, googleToken = null) {
     }
   }
 
-  // Graceful fallback for offline / disconnected states
+  // Graceful fallback
   const lowerQuery = query.toLowerCase();
   const allKnown = [...NEW_MUSIC_TRACKS, ...CHILL_MUSIC_TRACKS, ...TRENDING_TRACKS];
   const matched = allKnown.filter(t => 

@@ -72,13 +72,15 @@ export function youtubeAudioPlugin() {
 
           if (!query) {
             if (type === 'beranda' || type === 'home') {
-              query = 'top songs indonesia 2025 viral';
-            } else if (type === 'new' || type === 'trending') {
-              query = 'lagu terbaru 2025 new release';
+              query = 'top hits indonesia viral official music video';
+            } else if (type === 'new') {
+              query = 'bernadya sal priadi billie eilish espresso official music video';
+            } else if (type === 'trending') {
+              query = 'denny caknan sigar bernadya satu bulan official music video';
             } else if (type === 'charts') {
-              query = 'top 50 indonesia viral spotify youtube';
+              query = 'top 50 indonesia viral spotify official audio';
             } else if (type === 'albums') {
-              query = 'best album compilation songs';
+              query = 'best album songs indonesia';
             } else {
               res.writeHead(400, { 'Content-Type': 'application/json' });
               return res.end(JSON.stringify({ error: 'Missing query parameter q or valid type' }));
@@ -110,11 +112,19 @@ export function youtubeAudioPlugin() {
                 for (const item of (s?.itemSectionRenderer?.contents || [])) {
                   const v = item.videoRenderer;
                   if (v && v.videoId) {
+                    const rawTitle = v.title?.runs?.[0]?.text || 'Unknown Title';
+                    const lowerTitle = rawTitle.toLowerCase();
+
+                    // Filter out 1-hour/full-album compilation mixes to keep track list authentic
+                    if (lowerTitle.includes('full album') || lowerTitle.includes('kompilasi') || lowerTitle.includes('1 jam') || lowerTitle.includes('non stop')) {
+                      continue;
+                    }
+
                     const thumbs = v.thumbnail?.thumbnails || [];
                     const bestThumb = thumbs[thumbs.length - 1]?.url || `https://i.ytimg.com/vi/${v.videoId}/hqdefault.jpg`;
                     items.push({
                       id: v.videoId,
-                      title: v.title?.runs?.[0]?.text || 'Unknown Title',
+                      title: rawTitle,
                       artist: v.ownerText?.runs?.[0]?.text || v.shortBylineText?.runs?.[0]?.text || 'YouTube Artist',
                       album: type ? `YouTube ${type.toUpperCase()}` : 'YouTube Music',
                       cover: bestThumb,

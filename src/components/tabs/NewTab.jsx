@@ -1,7 +1,7 @@
 import React from 'react';
 import { ChevronRight, Play } from 'lucide-react';
 
-export default function NewTab({ onSelectTrack, newTracks = [] }) {
+export default function NewTab({ onSelectTrack, onPlayPlaylist, newTracks = [] }) {
   const featuredBanners = [
     {
       id: 'best_2026',
@@ -21,11 +21,22 @@ export default function NewTab({ onSelectTrack, newTracks = [] }) {
     }
   ];
 
+  const handleBannerClick = () => {
+    if (onPlayPlaylist && newTracks.length > 0) {
+      onPlayPlaylist(newTracks, 0);
+    } else if (newTracks.length > 0) {
+      onSelectTrack(newTracks[0]);
+    }
+  };
+
   return (
     <div className="flex-1 overflow-y-auto custom-scrollbar px-4 sm:px-6 pt-12 pb-36 select-none max-w-2xl mx-auto w-full">
       {/* Header: Large Bold 'New' */}
       <div className="pb-4 border-b border-white/5">
         <h1 className="text-3xl font-black text-white tracking-tight">New</h1>
+        <p className="text-xs text-white/50 font-medium mt-0.5">
+          Rilis Baru & Lagu Terkini 2026
+        </p>
       </div>
 
       {/* Featured Wide Banners */}
@@ -33,9 +44,7 @@ export default function NewTab({ onSelectTrack, newTracks = [] }) {
         {featuredBanners.map((banner) => (
           <div
             key={banner.id}
-            onClick={() => {
-              if (newTracks.length > 0) onSelectTrack(newTracks[0]);
-            }}
+            onClick={handleBannerClick}
             className="w-[280px] sm:w-[320px] shrink-0 cursor-pointer active:scale-[0.98] transition-all group"
           >
             <p className="text-[11px] font-bold text-white/50 tracking-wider uppercase">
@@ -77,7 +86,13 @@ export default function NewTab({ onSelectTrack, newTracks = [] }) {
           {newTracks.slice(0, 8).map((item, idx) => (
             <div
               key={`${item.id}-${idx}`}
-              onClick={() => onSelectTrack(item)}
+              onClick={() => {
+                if (onPlayPlaylist) {
+                  onPlayPlaylist(newTracks, idx);
+                } else {
+                  onSelectTrack(item);
+                }
+              }}
               className="w-36 shrink-0 cursor-pointer group active:scale-95 transition-all"
             >
               <div className="relative aspect-square rounded-2xl overflow-hidden shadow-lg border border-white/5 bg-[#1c1c1e]">
@@ -86,6 +101,11 @@ export default function NewTab({ onSelectTrack, newTracks = [] }) {
                   alt={item.title}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
+                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <div className="p-2 rounded-full bg-white/90 text-black">
+                    <Play size={14} className="fill-black ml-0.5" />
+                  </div>
+                </div>
               </div>
               <p className="text-xs font-bold text-white truncate mt-2 leading-tight">
                 {item.title}

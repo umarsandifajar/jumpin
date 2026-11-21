@@ -100,8 +100,8 @@ export default function App() {
 
       try {
         ytPlayerRef.current = new window.YT.Player('jumpin-yt-engine', {
-          height: '200',
-          width: '200',
+          height: '100',
+          width: '100',
           videoId: currentTrack.id,
           playerVars: {
             autoplay: 0,
@@ -122,6 +122,9 @@ export default function App() {
               if (event.data === 1) {
                 setIsPlaying(true);
                 if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
+                if (audioRef.current && audioRef.current.paused) {
+                  audioRef.current.play().catch(() => {});
+                }
               } else if (event.data === 2) {
                 setIsPlaying(false);
                 if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
@@ -146,7 +149,23 @@ export default function App() {
     }
   }, []);
 
-  // 3. Sync track changes with YouTube Engine & MediaSession
+  // 3. Keep audio session and MediaSession alive during iOS lock screen / app minimize
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        if (isPlaying && audioRef.current && audioRef.current.paused) {
+          audioRef.current.play().catch(() => {});
+        }
+        if ('mediaSession' in navigator) {
+          navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [isPlaying]);
+
+  // 4. Sync track changes with YouTube Engine & MediaSession
   useEffect(() => {
     const isLiveRadio = Boolean(currentTrack?.isLive || currentTrack?.isRadio || currentTrack?.streamUrl);
     
@@ -165,7 +184,7 @@ export default function App() {
     updateMediaSession(currentTrack);
   }, [currentIndex, currentTrack?.id]);
 
-  // 4. Smooth Scrubber Interval from YouTube Player Engine
+  // 5. Smooth Scrubber Interval from YouTube Player Engine + Lock Screen Scrubber Sync
   useEffect(() => {
     let interval = null;
     const isLiveRadio = Boolean(currentTrack?.isLive || currentTrack?.isRadio || currentTrack?.streamUrl);
@@ -177,12 +196,24 @@ export default function App() {
             const cur = ytPlayerRef.current.getCurrentTime() || 0;
             const dur = ytPlayerRef.current.getDuration() || 0;
             if (!isNaN(cur) && cur >= 0) setCurrentTime(cur);
-            if (!isNaN(dur) && dur > 0) setDuration(dur);
+            if (!isNaN(dur) && dur > 0) {
+              setDuration(dur);
+              // Update iOS Lock screen position state
+              if ('mediaSession' in navigator && 'setPositionState' in navigator.mediaSession) {
+                try {
+                  navigator.mediaSession.setPositionState({
+                    duration: Math.max(dur, 1),
+                    playbackRate: 1,
+                    position: Math.min(cur, dur)
+                  });
+                } catch {}
+              }
+            }
           } catch {
             // ignore periodic cross-frame read issues
           }
         }
-      }, 350);
+      }, 500);
     }
     return () => clearInterval(interval);
   }, [isPlaying, currentTrack?.id]);
@@ -199,6 +230,8 @@ export default function App() {
           { src: track.cover, sizes: '192x192', type: 'image/jpeg' }
         ]
       });
+
+      navigator.mediaSession.playbackState = 'playing';
 
       navigator.mediaSession.setActionHandler('play', () => handlePlay());
       navigator.mediaSession.setActionHandler('pause', () => handlePause());
@@ -339,7 +372,7 @@ export default function App() {
       }
     }
 
-    // Trigger silent audio play inside user touch gesture for iOS Lock Screen compliance
+    // Trigger persistent silence audio loop for iOS Lock Screen compliance
     if (audioRef.current) {
       audioRef.current.play().catch(() => {});
     }
@@ -347,12 +380,44 @@ export default function App() {
     updateMediaSession(selectedTrack);
   };
 
-  // Play whole playlist and queue it
+  // Play whole playlist and queue it cleanly
   const handlePlayPlaylist = (tracks, startIndex = 0) => {
     if (!tracks || tracks.length === 0) return;
+    const targetTrack = tracks[startIndex] || tracks[0];
     setQueue(tracks);
     setCurrentIndex(startIndex);
-    handleSelectTrack(tracks[startIndex]);
+    setCurrentTime(0);
+    setIsPlaying(true);
+
+    const isLiveRadio = Boolean(targetTrack.isLive || targetTrack.isRadio || targetTrack.streamUrl);
+    if (isLiveRadio) {
+      if (ytPlayerRef.current?.pauseVideo) {
+        try { ytPlayerRef.current.pauseVideo(); } catch {}
+      }
+      if (radioAudioRef.current) {
+        radioAudioRef.current.src = targetTrack.streamUrl;
+        radioAudioRef.current.play().then(() => setIsPlaying(true)).catch(console.warn);
+      }
+    } else {
+      if (radioAudioRef.current) {
+        radioAudioRef.current.pause();
+        radioAudioRef.current.removeAttribute('src');
+      }
+      if (ytPlayerRef.current && ytPlayerRef.current.loadVideoById) {
+        try {
+          ytPlayerRef.current.loadVideoById(targetTrack.id);
+          ytPlayerRef.current.playVideo();
+        } catch (err) {
+          console.warn('Error loading video on play playlist:', err);
+        }
+      }
+    }
+
+    if (audioRef.current) {
+      audioRef.current.play().catch(() => {});
+    }
+
+    updateMediaSession(targetTrack);
   };
 
   // Toggle Like Song
@@ -386,7 +451,7 @@ export default function App() {
     setIsPlaylistModalOpen(true);
     setLoadingPlaylist(true);
     try {
-      const tracks = await searchSongs('Bernadya Coldplay Sheila on 7 The Weeknd', googleToken);
+      const tracks = await searchSongs('Bernadya Sal Priadi Sheila on 7 The Weeknd', googleToken);
       setPlaylistTracks(tracks);
     } finally {
       setLoadingPlaylist(false);
@@ -421,10 +486,10 @@ export default function App() {
 
   return (
     <div className="flex flex-col h-screen w-full bg-black text-white antialiased font-sans overflow-hidden select-none">
-      {/* 1. Silent HTML5 Audio Element for iOS background keepalive */}
+      {/* 1. Real 5-Second Looping PCM Audio Element for iOS background keepalive */}
       <audio
         ref={audioRef}
-        src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA="
+        src="/silence.wav"
         loop
         playsInline
         preload="auto"
@@ -439,8 +504,11 @@ export default function App() {
         onError={(e) => console.warn('Radio stream error:', e)}
       />
 
-      {/* 3. Hidden YouTube Iframe Player Container */}
-      <div className="fixed -top-[9999px] -left-[9999px] w-[200px] h-[200px] opacity-0 pointer-events-none overflow-hidden">
+      {/* 3. On-screen 1x1 Low-Opacity YouTube Iframe Player (Prevents iOS WebKit cull/freeze) */}
+      <div 
+        className="fixed bottom-0 right-0 w-1 h-1 opacity-[0.01] pointer-events-none overflow-hidden z-[-1]"
+        style={{ pointerEvents: 'none' }}
+      >
         <div id="jumpin-yt-engine"></div>
       </div>
 
@@ -465,6 +533,7 @@ export default function App() {
         {activeTab === 'new' && (
           <NewTab
             onSelectTrack={handleSelectTrack}
+            onPlayPlaylist={handlePlayPlaylist}
             newTracks={newTracks.length > 0 ? newTracks : trendingTracks}
           />
         )}
