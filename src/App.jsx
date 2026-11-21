@@ -62,8 +62,22 @@ export default function App() {
   const [isQueueOpen, setIsQueueOpen] = useState(false);
 
   const audioRef = useRef(null);
+  const audioCtxRef = useRef(null);
   const ytPlayerRef = useRef(null);
   const currentTrack = queue[currentIndex] || INITIAL_TRACKS[0];
+
+  // Awaken iOS WebAudio session to establish background audio privilege on iOS Safari
+  const initAudioSession = () => {
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (AudioContext && !audioCtxRef.current) {
+        audioCtxRef.current = new AudioContext();
+      }
+      if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
+        audioCtxRef.current.resume().catch(() => {});
+      }
+    } catch {}
+  };
 
   // 1. Restore Google Session & Cache on Mount
   useEffect(() => {
@@ -154,6 +168,9 @@ export default function App() {
         if (isPlaying && audioRef.current && audioRef.current.paused) {
           audioRef.current.play().catch(() => {});
         }
+        if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
+          audioCtxRef.current.resume().catch(() => {});
+        }
         if ('mediaSession' in navigator) {
           navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
         }
@@ -196,16 +213,20 @@ export default function App() {
   };
 
   const handlePlay = () => {
+    initAudioSession();
     setIsPlaying(true);
     if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
 
-    if (audioRef.current) {
+    if (audioRef.current && audioRef.current.src) {
       audioRef.current.play().catch(() => {
         if (ytPlayerRef.current?.playVideo) {
           ytPlayerRef.current.setVolume(100);
           ytPlayerRef.current.playVideo();
         }
       });
+    } else if (ytPlayerRef.current?.playVideo) {
+      ytPlayerRef.current.setVolume(100);
+      ytPlayerRef.current.playVideo();
     }
   };
 
@@ -278,6 +299,9 @@ export default function App() {
     setIsPlaying(true);
     setCurrentTime(0);
 
+    // Awaken iOS CoreAudio session on user touch gesture
+    initAudioSession();
+
     if (isLiveRadio) {
       // Pause YouTube player
       if (ytPlayerRef.current && ytPlayerRef.current.pauseVideo) {
@@ -289,26 +313,24 @@ export default function App() {
         audioRef.current.play().then(() => setIsPlaying(true)).catch(console.warn);
       }
     } else {
+      // Pause standby YouTube player so it never interferes or causes iOS WebKit iframe pause
+      if (ytPlayerRef.current && ytPlayerRef.current.pauseVideo) {
+        try { ytPlayerRef.current.pauseVideo(); } catch {}
+      }
+
       // Stream YouTube track directly through HTML5 Audio element for iOS Background Audio persistence
       if (audioRef.current) {
         audioRef.current.src = `/api/stream?id=${selectedTrack.id}`;
-        audioRef.current.play().catch(() => {
-          // Fallback to YouTube iframe
+        audioRef.current.play().then(() => {
+          setIsPlaying(true);
+        }).catch((err) => {
+          console.warn('HTML5 Audio direct stream error, activating YouTube iframe fallback:', err);
           if (ytPlayerRef.current?.setVolume) ytPlayerRef.current.setVolume(100);
           if (ytPlayerRef.current?.loadVideoById) {
             ytPlayerRef.current.loadVideoById(selectedTrack.id);
             ytPlayerRef.current.playVideo();
           }
         });
-      }
-      // Warm YouTube iframe as standby
-      if (ytPlayerRef.current && ytPlayerRef.current.loadVideoById) {
-        try {
-          ytPlayerRef.current.loadVideoById(selectedTrack.id);
-          ytPlayerRef.current.playVideo();
-        } catch (err) {
-          console.warn('Error loading video on select:', err);
-        }
       }
     }
 
@@ -409,12 +431,13 @@ export default function App() {
         onPlay={() => {
           setIsPlaying(true);
           if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
-          // Mute YouTube iframe when native audio is active to eliminate duplicate sound
-          if (ytPlayerRef.current?.setVolume) {
-            try { ytPlayerRef.current.setVolume(0); } catch {}
+          // Keep YouTube player quiet and paused while native HTML5 audio stream is running
+          if (ytPlayerRef.current?.pauseVideo) {
+            try { ytPlayerRef.current.pauseVideo(); } catch {}
           }
         }}
         onPause={() => {
+          if (audioRef.current?.ended) return;
           setIsPlaying(false);
           if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
         }}
@@ -437,9 +460,14 @@ export default function App() {
         }}
         onEnded={handleNext}
         onError={() => {
-          // If HTML5 audio stream encounters network error, fallback unmute YouTube iframe
-          if (ytPlayerRef.current?.setVolume) {
-            try { ytPlayerRef.current.setVolume(100); } catch {}
+          // If HTML5 audio stream encounters network error, fallback to YouTube iframe
+          console.warn('HTML5 audio error, activating YouTube fallback');
+          if (ytPlayerRef.current?.loadVideoById && currentTrack?.id) {
+            try {
+              ytPlayerRef.current.loadVideoById(currentTrack.id);
+              ytPlayerRef.current.setVolume(100);
+              ytPlayerRef.current.playVideo();
+            } catch {}
           }
         }}
       />
