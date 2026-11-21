@@ -9,11 +9,11 @@ import RadioTab from './components/tabs/RadioTab';
 import LibraryTab from './components/tabs/LibraryTab';
 import SearchTab from './components/tabs/SearchTab';
 import PlaylistModal from './components/PlaylistModal';
+import PlaylistsListModal from './components/PlaylistsListModal';
 import QueueModal from './components/QueueModal';
 import AuthModal from './components/AuthModal';
 import { 
   INITIAL_TRACKS, 
-  CURATED_YOUTUBE_PLAYLISTS, 
   NEW_MUSIC_TRACKS,
   CHILL_MUSIC_TRACKS,
   TRENDING_TRACKS,
@@ -56,12 +56,12 @@ export default function App() {
   const [selectedPlaylist, setSelectedPlaylist] = useState(null);
   const [playlistTracks, setPlaylistTracks] = useState([]);
   const [isPlaylistModalOpen, setIsPlaylistModalOpen] = useState(false);
+  const [isPlaylistsListOpen, setIsPlaylistsListOpen] = useState(false);
   const [loadingPlaylist, setLoadingPlaylist] = useState(false);
   const [isLikedModalOpen, setIsLikedModalOpen] = useState(false);
   const [isQueueOpen, setIsQueueOpen] = useState(false);
 
   const audioRef = useRef(null);
-  const radioAudioRef = useRef(null);
   const ytPlayerRef = useRef(null);
   const currentTrack = queue[currentIndex] || INITIAL_TRACKS[0];
 
@@ -93,7 +93,7 @@ export default function App() {
     loadFeeds();
   }, []);
 
-  // 2. Initialize YouTube Iframe Player Engine
+  // 2. Initialize YouTube Iframe Player Engine (Fallback / Visual Engine)
   useEffect(() => {
     const initYT = () => {
       if (!window.YT || !window.YT.Player || ytPlayerRef.current) return;
@@ -118,14 +118,12 @@ export default function App() {
               event.target.setVolume(100);
             },
             onStateChange: (event) => {
-              // 1: PLAYING, 2: PAUSED, 0: ENDED, 3: BUFFERING
               if (event.data === 1) {
                 setIsPlaying(true);
                 if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
-                if (audioRef.current && audioRef.current.paused) {
-                  audioRef.current.play().catch(() => {});
-                }
               } else if (event.data === 2) {
+                // If HTML5 audio is playing, do not stop isPlaying
+                if (audioRef.current && !audioRef.current.paused) return;
                 setIsPlaying(false);
                 if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
               } else if (event.data === 0) {
@@ -165,58 +163,10 @@ export default function App() {
     return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, [isPlaying]);
 
-  // 4. Sync track changes with YouTube Engine & MediaSession
+  // 4. Sync track changes with MediaSession
   useEffect(() => {
-    const isLiveRadio = Boolean(currentTrack?.isLive || currentTrack?.isRadio || currentTrack?.streamUrl);
-    
-    if (!isLiveRadio) {
-      if (ytPlayerRef.current && ytPlayerRef.current.loadVideoById) {
-        try {
-          ytPlayerRef.current.loadVideoById(currentTrack.id);
-          if (isPlaying) {
-            ytPlayerRef.current.playVideo();
-          }
-        } catch (err) {
-          console.warn('Error loading video into YT Engine:', err);
-        }
-      }
-    }
     updateMediaSession(currentTrack);
   }, [currentIndex, currentTrack?.id]);
-
-  // 5. Smooth Scrubber Interval from YouTube Player Engine + Lock Screen Scrubber Sync
-  useEffect(() => {
-    let interval = null;
-    const isLiveRadio = Boolean(currentTrack?.isLive || currentTrack?.isRadio || currentTrack?.streamUrl);
-
-    if (isPlaying && !isLiveRadio) {
-      interval = setInterval(() => {
-        if (ytPlayerRef.current && ytPlayerRef.current.getCurrentTime) {
-          try {
-            const cur = ytPlayerRef.current.getCurrentTime() || 0;
-            const dur = ytPlayerRef.current.getDuration() || 0;
-            if (!isNaN(cur) && cur >= 0) setCurrentTime(cur);
-            if (!isNaN(dur) && dur > 0) {
-              setDuration(dur);
-              // Update iOS Lock screen position state
-              if ('mediaSession' in navigator && 'setPositionState' in navigator.mediaSession) {
-                try {
-                  navigator.mediaSession.setPositionState({
-                    duration: Math.max(dur, 1),
-                    playbackRate: 1,
-                    position: Math.min(cur, dur)
-                  });
-                } catch {}
-              }
-            }
-          } catch {
-            // ignore periodic cross-frame read issues
-          }
-        }
-      }, 500);
-    }
-    return () => clearInterval(interval);
-  }, [isPlaying, currentTrack?.id]);
 
   // iOS Lock Screen & Dynamic Island MediaSession Integration
   const updateMediaSession = (track) => {
@@ -249,23 +199,13 @@ export default function App() {
     setIsPlaying(true);
     if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
 
-    const isLiveRadio = Boolean(currentTrack?.isLive || currentTrack?.isRadio || currentTrack?.streamUrl);
-
-    if (isLiveRadio) {
-      if (radioAudioRef.current) {
-        if (!radioAudioRef.current.src) {
-          radioAudioRef.current.src = currentTrack.streamUrl;
-        }
-        radioAudioRef.current.play().catch(console.warn);
-      }
-    } else {
-      if (ytPlayerRef.current && ytPlayerRef.current.playVideo) {
-        ytPlayerRef.current.playVideo();
-      }
-    }
-
     if (audioRef.current) {
-      audioRef.current.play().catch(() => {});
+      audioRef.current.play().catch(() => {
+        if (ytPlayerRef.current?.playVideo) {
+          ytPlayerRef.current.setVolume(100);
+          ytPlayerRef.current.playVideo();
+        }
+      });
     }
   };
 
@@ -273,20 +213,11 @@ export default function App() {
     setIsPlaying(false);
     if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
 
-    const isLiveRadio = Boolean(currentTrack?.isLive || currentTrack?.isRadio || currentTrack?.streamUrl);
-
-    if (isLiveRadio) {
-      if (radioAudioRef.current) {
-        radioAudioRef.current.pause();
-      }
-    } else {
-      if (ytPlayerRef.current && ytPlayerRef.current.pauseVideo) {
-        ytPlayerRef.current.pauseVideo();
-      }
-    }
-
     if (audioRef.current) {
       audioRef.current.pause();
+    }
+    if (ytPlayerRef.current && ytPlayerRef.current.pauseVideo) {
+      ytPlayerRef.current.pauseVideo();
     }
   };
 
@@ -321,6 +252,9 @@ export default function App() {
     if (isLiveRadio) return; // Cannot seek live stream
 
     setCurrentTime(newTime);
+    if (audioRef.current) {
+      audioRef.current.currentTime = newTime;
+    }
     if (ytPlayerRef.current && ytPlayerRef.current.seekTo) {
       try {
         ytPlayerRef.current.seekTo(newTime, true);
@@ -350,18 +284,24 @@ export default function App() {
         try { ytPlayerRef.current.pauseVideo(); } catch {}
       }
       // Stream radio live via HTML5 Audio
-      if (radioAudioRef.current) {
-        radioAudioRef.current.src = selectedTrack.streamUrl;
-        radioAudioRef.current.play().then(() => setIsPlaying(true)).catch(console.warn);
+      if (audioRef.current) {
+        audioRef.current.src = selectedTrack.streamUrl;
+        audioRef.current.play().then(() => setIsPlaying(true)).catch(console.warn);
       }
     } else {
-      // Stop radio stream if playing
-      if (radioAudioRef.current) {
-        radioAudioRef.current.pause();
-        radioAudioRef.current.removeAttribute('src');
-        radioAudioRef.current.load();
+      // Stream YouTube track directly through HTML5 Audio element for iOS Background Audio persistence
+      if (audioRef.current) {
+        audioRef.current.src = `/api/stream?id=${selectedTrack.id}`;
+        audioRef.current.play().catch(() => {
+          // Fallback to YouTube iframe
+          if (ytPlayerRef.current?.setVolume) ytPlayerRef.current.setVolume(100);
+          if (ytPlayerRef.current?.loadVideoById) {
+            ytPlayerRef.current.loadVideoById(selectedTrack.id);
+            ytPlayerRef.current.playVideo();
+          }
+        });
       }
-      // Stream YouTube video
+      // Warm YouTube iframe as standby
       if (ytPlayerRef.current && ytPlayerRef.current.loadVideoById) {
         try {
           ytPlayerRef.current.loadVideoById(selectedTrack.id);
@@ -370,11 +310,6 @@ export default function App() {
           console.warn('Error loading video on select:', err);
         }
       }
-    }
-
-    // Trigger persistent silence audio loop for iOS Lock Screen compliance
-    if (audioRef.current) {
-      audioRef.current.play().catch(() => {});
     }
 
     updateMediaSession(selectedTrack);
@@ -388,36 +323,28 @@ export default function App() {
     setCurrentIndex(startIndex);
     setCurrentTime(0);
     setIsPlaying(true);
+    handleSelectTrack(targetTrack);
+  };
 
-    const isLiveRadio = Boolean(targetTrack.isLive || targetTrack.isRadio || targetTrack.streamUrl);
-    if (isLiveRadio) {
-      if (ytPlayerRef.current?.pauseVideo) {
-        try { ytPlayerRef.current.pauseVideo(); } catch {}
-      }
-      if (radioAudioRef.current) {
-        radioAudioRef.current.src = targetTrack.streamUrl;
-        radioAudioRef.current.play().then(() => setIsPlaying(true)).catch(console.warn);
+  // Open Playlist Tracks view
+  const handleOpenPlaylistTracks = async (playlist) => {
+    setIsPlaylistsListOpen(false);
+    setSelectedPlaylist(playlist);
+    setIsPlaylistModalOpen(true);
+
+    if (playlist.tracks && playlist.tracks.length > 0) {
+      setPlaylistTracks(playlist.tracks);
+    } else if (playlist.id && googleToken) {
+      setLoadingPlaylist(true);
+      try {
+        const tracks = await fetchPlaylistTracks(playlist.id, googleToken);
+        setPlaylistTracks(tracks);
+      } finally {
+        setLoadingPlaylist(false);
       }
     } else {
-      if (radioAudioRef.current) {
-        radioAudioRef.current.pause();
-        radioAudioRef.current.removeAttribute('src');
-      }
-      if (ytPlayerRef.current && ytPlayerRef.current.loadVideoById) {
-        try {
-          ytPlayerRef.current.loadVideoById(targetTrack.id);
-          ytPlayerRef.current.playVideo();
-        } catch (err) {
-          console.warn('Error loading video on play playlist:', err);
-        }
-      }
+      setPlaylistTracks(TRENDING_TRACKS);
     }
-
-    if (audioRef.current) {
-      audioRef.current.play().catch(() => {});
-    }
-
-    updateMediaSession(targetTrack);
   };
 
   // Toggle Like Song
@@ -441,36 +368,24 @@ export default function App() {
 
   // Library Handlers
   const handleOpenPlaylists = () => {
-    setSelectedPlaylist({ name: 'Playlists' });
-    setPlaylistTracks(CURATED_YOUTUBE_PLAYLISTS);
-    setIsPlaylistModalOpen(true);
+    setIsPlaylistsListOpen(true);
   };
 
-  const handleOpenArtists = async () => {
+  const handleOpenArtists = () => {
     setSelectedPlaylist({ name: 'Artists' });
+    setPlaylistTracks(NEW_MUSIC_TRACKS);
     setIsPlaylistModalOpen(true);
-    setLoadingPlaylist(true);
-    try {
-      const tracks = await searchSongs('Bernadya Sal Priadi Sheila on 7 The Weeknd', googleToken);
-      setPlaylistTracks(tracks);
-    } finally {
-      setLoadingPlaylist(false);
-    }
   };
 
-  const handleOpenAlbums = async () => {
+  const handleOpenAlbums = () => {
     setSelectedPlaylist({ name: 'Albums' });
+    setPlaylistTracks(CHILL_MUSIC_TRACKS);
     setIsPlaylistModalOpen(true);
-    setLoadingPlaylist(true);
-    try {
-      const tracks = await fetchCategoryTracks('charts');
-      setPlaylistTracks(tracks);
-    } finally {
-      setLoadingPlaylist(false);
-    }
   };
 
   const handleOpenLikedSongs = () => {
+    setSelectedPlaylist({ name: 'Songs' });
+    setPlaylistTracks(likedTracks.length > 0 ? likedTracks : TRENDING_TRACKS);
     setIsLikedModalOpen(true);
   };
 
@@ -486,25 +401,50 @@ export default function App() {
 
   return (
     <div className="flex flex-col h-screen w-full bg-black text-white antialiased font-sans overflow-hidden select-none">
-      {/* 1. Real 5-Second Looping PCM Audio Element for iOS background keepalive */}
+      {/* 1. Master HTML5 Audio Element (Streams audio directly for continuous iOS background & lock screen playback) */}
       <audio
         ref={audioRef}
-        src="/silence.wav"
-        loop
         playsInline
         preload="auto"
+        onPlay={() => {
+          setIsPlaying(true);
+          if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
+          // Mute YouTube iframe when native audio is active to eliminate duplicate sound
+          if (ytPlayerRef.current?.setVolume) {
+            try { ytPlayerRef.current.setVolume(0); } catch {}
+          }
+        }}
+        onPause={() => {
+          setIsPlaying(false);
+          if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
+        }}
+        onTimeUpdate={(e) => {
+          const cur = e.currentTarget.currentTime || 0;
+          const dur = e.currentTarget.duration || 0;
+          if (!isNaN(cur) && cur >= 0) setCurrentTime(cur);
+          if (!isNaN(dur) && dur > 0) {
+            setDuration(dur);
+            if ('mediaSession' in navigator && 'setPositionState' in navigator.mediaSession) {
+              try {
+                navigator.mediaSession.setPositionState({
+                  duration: Math.max(dur, 1),
+                  playbackRate: 1,
+                  position: Math.min(cur, dur)
+                });
+              } catch {}
+            }
+          }
+        }}
+        onEnded={handleNext}
+        onError={() => {
+          // If HTML5 audio stream encounters network error, fallback unmute YouTube iframe
+          if (ytPlayerRef.current?.setVolume) {
+            try { ytPlayerRef.current.setVolume(100); } catch {}
+          }
+        }}
       />
 
-      {/* 2. Direct HTML5 Audio for Live Radio Stations (100% Free, No Login) */}
-      <audio
-        ref={radioAudioRef}
-        preload="none"
-        onPlay={() => setIsPlaying(true)}
-        onPause={() => setIsPlaying(false)}
-        onError={(e) => console.warn('Radio stream error:', e)}
-      />
-
-      {/* 3. On-screen 1x1 Low-Opacity YouTube Iframe Player (Prevents iOS WebKit cull/freeze) */}
+      {/* 2. On-screen 1x1 Low-Opacity YouTube Iframe Player (Standby & Visual Engine) */}
       <div 
         className="fixed bottom-0 right-0 w-1 h-1 opacity-[0.01] pointer-events-none overflow-hidden z-[-1]"
         style={{ pointerEvents: 'none' }}
@@ -512,12 +452,12 @@ export default function App() {
         <div id="jumpin-yt-engine"></div>
       </div>
 
-      {/* 4. 1-Second Apple-style Splash Screen (Preserved) */}
+      {/* 3. 1-Second Apple-style Splash Screen (Preserved) */}
       {showSplash && (
         <SplashScreen onFinish={() => setShowSplash(false)} />
       )}
 
-      {/* 5. Active Tab Content View */}
+      {/* 4. Active Tab Content View */}
       <main className="flex-1 overflow-hidden flex flex-col">
         {activeTab === 'home' && (
           <HomeTab
@@ -565,7 +505,7 @@ export default function App() {
         )}
       </main>
 
-      {/* 6. Persistent Mini Player Capsule (Floats above bottom tab bar) */}
+      {/* 5. Persistent Mini Player Capsule (Floats above bottom tab bar) */}
       <MiniPlayer
         track={currentTrack}
         isPlaying={isPlaying}
@@ -574,13 +514,13 @@ export default function App() {
         onOpenFullscreen={() => setIsPlayerOpen(true)}
       />
 
-      {/* 7. Apple Music 5-Tab Floating Bottom Navigation Bar */}
+      {/* 6. Apple Music 5-Tab Floating Bottom Navigation Bar */}
       <BottomTabBar
         activeTab={activeTab}
         onSelectTab={(tabId) => setActiveTab(tabId)}
       />
 
-      {/* 8. Fullscreen Lyrics & Now Playing Modal with Swipe-Down Gesture */}
+      {/* 7. Fullscreen Lyrics & Now Playing Modal with Swipe-Down Gesture */}
       <FullscreenPlayer
         isOpen={isPlayerOpen}
         onClose={() => setIsPlayerOpen(false)}
@@ -597,6 +537,16 @@ export default function App() {
         onOpenQueue={() => setIsQueueOpen(true)}
       />
 
+      {/* 8. Playlists Directory Modal */}
+      <PlaylistsListModal
+        isOpen={isPlaylistsListOpen}
+        onClose={() => setIsPlaylistsListOpen(false)}
+        user={user}
+        userPlaylists={userPlaylists}
+        onOpenPlaylistTracks={handleOpenPlaylistTracks}
+        onPlayPlaylist={handlePlayPlaylist}
+      />
+
       {/* 9. Queue Modal */}
       <QueueModal
         isOpen={isQueueOpen}
@@ -606,11 +556,11 @@ export default function App() {
         onSelectTrack={handleSelectTrack}
       />
 
-      {/* 10. Playlist Modal */}
+      {/* 10. Single Playlist Tracks Modal */}
       <PlaylistModal
         isOpen={isPlaylistModalOpen}
         onClose={() => setIsPlaylistModalOpen(false)}
-        title={selectedPlaylist?.name || 'Playlist'}
+        title={selectedPlaylist?.title || selectedPlaylist?.name || 'Playlist'}
         subtitle={loadingPlaylist ? 'Memuat...' : `${playlistTracks.length} lagu`}
         tracks={playlistTracks}
         loading={loadingPlaylist}
@@ -626,7 +576,7 @@ export default function App() {
         onClose={() => setIsLikedModalOpen(false)}
         title="Songs"
         subtitle="Saved & Liked Music"
-        tracks={likedTracks}
+        tracks={likedTracks.length > 0 ? likedTracks : TRENDING_TRACKS}
         isLikedView={true}
         currentTrackId={currentTrack?.id}
         isPlaying={isPlaying}

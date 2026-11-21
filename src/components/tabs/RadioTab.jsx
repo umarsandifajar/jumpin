@@ -13,7 +13,7 @@ export default function RadioTab({ onSelectTrack, currentTrackId, isPlaying }) {
         <div>
           <h1 className="text-3xl font-black text-white tracking-tight">Radio</h1>
           <p className="text-xs text-white/50 font-medium mt-0.5">
-            Stasiun Radio Terkemuka • Siaran Langsung 24 Jam Tanpa Login
+            Stasiun Radio Terkemuka • Siaran Langsung 24 Jam Bebas Login
           </p>
         </div>
         <div className="p-2 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400">
@@ -35,7 +35,7 @@ export default function RadioTab({ onSelectTrack, currentTrackId, isPlaying }) {
               <div
                 key={station.id}
                 onClick={() => onSelectTrack(station)}
-                className="group relative h-[190px] rounded-3xl overflow-hidden cursor-pointer shadow-2xl border border-white/10 active:scale-[0.98] transition-all bg-[#1c1c1e]"
+                className="group relative h-[200px] rounded-3xl overflow-hidden cursor-pointer shadow-2xl border border-white/10 active:scale-[0.98] transition-all bg-[#1c1c1e]"
               >
                 {/* Background Image with Gradient Overlay */}
                 <img
@@ -44,7 +44,7 @@ export default function RadioTab({ onSelectTrack, currentTrackId, isPlaying }) {
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 brightness-75"
                 />
                 <div className={`absolute inset-0 bg-gradient-to-r ${station.gradient} opacity-75 mix-blend-multiply`} />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent p-5 flex flex-col justify-between" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent p-5" />
 
                 {/* Card Content */}
                 <div className="relative z-10 p-5 h-full flex flex-col justify-between">
@@ -62,7 +62,7 @@ export default function RadioTab({ onSelectTrack, currentTrackId, isPlaying }) {
                     </span>
                   </div>
 
-                  {/* Bottom Info: Title, City, Tagline + Play Button */}
+                  {/* Bottom Info: Title, City, Tagline, Description + Play Button */}
                   <div className="flex items-end justify-between">
                     <div className="pr-4">
                       <p className="text-xs font-semibold text-white/70 uppercase tracking-wider">
@@ -71,8 +71,11 @@ export default function RadioTab({ onSelectTrack, currentTrackId, isPlaying }) {
                       <h3 className="text-2xl font-black text-white drop-shadow-md leading-tight mt-0.5">
                         {station.name}
                       </h3>
-                      <p className="text-xs text-white/90 font-medium line-clamp-1 mt-1">
+                      <p className="text-xs text-white/95 font-semibold line-clamp-1 mt-1">
                         {station.tagline}
+                      </p>
+                      <p className="text-[11px] text-white/60 line-clamp-1 mt-0.5">
+                        {station.description}
                       </p>
                     </div>
 
