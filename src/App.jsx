@@ -1,14 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import SplashScreen from './components/SplashScreen';
-import NowPlaying from './components/NowPlaying';
-import SearchModal from './components/SearchModal';
-import QueueModal from './components/QueueModal';
-import SidebarDrawer from './components/SidebarDrawer';
-import AuthModal from './components/AuthModal';
+import BottomTabBar from './components/BottomTabBar';
+import MiniPlayer from './components/MiniPlayer';
+import FullscreenPlayer from './components/FullscreenPlayer';
+import HomeTab from './components/tabs/HomeTab';
+import NewTab from './components/tabs/NewTab';
+import RadioTab from './components/tabs/RadioTab';
+import LibraryTab from './components/tabs/LibraryTab';
+import SearchTab from './components/tabs/SearchTab';
 import PlaylistModal from './components/PlaylistModal';
+import QueueModal from './components/QueueModal';
+import AuthModal from './components/AuthModal';
 import { 
   INITIAL_TRACKS, 
-  getAudioStreamUrl, 
   CURATED_YOUTUBE_PLAYLISTS, 
   fetchCategoryTracks, 
   searchSongs 
@@ -16,43 +20,48 @@ import {
 import { 
   getSavedSession, 
   logoutGoogle, 
-  fetchPlaylistTracks,
-  fetchTrendingMusic,
-  fetchSubscribedArtists
+  fetchPlaylistTracks, 
+  fetchTrendingMusic, 
+  fetchSubscribedArtists 
 } from './services/youtubeAuth';
 
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
+  const [activeTab, setActiveTab] = useState('home'); // 'home' | 'new' | 'radio' | 'library' | 'search'
+  const [isPlayerOpen, setIsPlayerOpen] = useState(false); // Fullscreen Lyrics Player
+
+  // Player State
   const [queue, setQueue] = useState(INITIAL_TRACKS);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [volume, setVolume] = useState(0.8);
-  const [isMuted, setIsMuted] = useState(false);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [isQueueOpen, setIsQueueOpen] = useState(false);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  // Google & YouTube Music State
+  // Content Feeds
+  const [trendingTracks, setTrendingTracks] = useState([]);
+  const [newTracks, setNewTracks] = useState([]);
+  const [radioTracks, setRadioTracks] = useState([]);
+
+  // Google / YouTube Session
   const [user, setUser] = useState(null);
   const [googleToken, setGoogleToken] = useState(null);
   const [userPlaylists, setUserPlaylists] = useState([]);
   const [likedTracks, setLikedTracks] = useState([]);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
 
-  // Playlist View State
-  const [isLikedModalOpen, setIsLikedModalOpen] = useState(false);
+  // Modal State for Playlists & Queues
   const [selectedPlaylist, setSelectedPlaylist] = useState(null);
   const [playlistTracks, setPlaylistTracks] = useState([]);
   const [isPlaylistModalOpen, setIsPlaylistModalOpen] = useState(false);
   const [loadingPlaylist, setLoadingPlaylist] = useState(false);
+  const [isLikedModalOpen, setIsLikedModalOpen] = useState(false);
+  const [isQueueOpen, setIsQueueOpen] = useState(false);
 
   const audioRef = useRef(null);
   const ytPlayerRef = useRef(null);
   const currentTrack = queue[currentIndex] || INITIAL_TRACKS[0];
 
-  // Restore Google Session on mount
+  // 1. Restore Google Session & Cache on Mount
   useEffect(() => {
     const session = getSavedSession();
     if (session && session.profile) {
@@ -61,9 +70,26 @@ export default function App() {
       if (session.playlists) setUserPlaylists(session.playlists);
       if (session.liked) setLikedTracks(session.liked);
     }
+
+    // Preload music feeds for Home, New, and Radio tabs
+    const loadFeeds = async () => {
+      try {
+        const [trend, latest, radio] = await Promise.all([
+          fetchCategoryTracks('trending'),
+          fetchCategoryTracks('new'),
+          fetchCategoryTracks('charts')
+        ]);
+        if (trend && trend.length > 0) setTrendingTracks(trend);
+        if (latest && latest.length > 0) setNewTracks(latest);
+        if (radio && radio.length > 0) setRadioTracks(radio);
+      } catch (err) {
+        console.warn('Feed load error:', err);
+      }
+    };
+    loadFeeds();
   }, []);
 
-  // Initialize YouTube Iframe Player Engine (Instant direct stream, no 403, no proxy lag)
+  // 2. Initialize YouTube Iframe Player Engine (Instant direct stream, no 403, no proxy lag)
   useEffect(() => {
     const initYT = () => {
       if (!window.YT || !window.YT.Player || ytPlayerRef.current) return;
@@ -85,7 +111,7 @@ export default function App() {
           },
           events: {
             onReady: (event) => {
-              event.target.setVolume(volume * 100);
+              event.target.setVolume(100);
             },
             onStateChange: (event) => {
               // 1: PLAYING, 2: PAUSED, 0: ENDED, 3: BUFFERING
@@ -116,7 +142,7 @@ export default function App() {
     }
   }, []);
 
-  // Sync track changes with YouTube Engine & MediaSession
+  // 3. Sync track changes with YouTube Engine & MediaSession
   useEffect(() => {
     if (ytPlayerRef.current && ytPlayerRef.current.loadVideoById) {
       try {
@@ -131,7 +157,7 @@ export default function App() {
     updateMediaSession(currentTrack);
   }, [currentIndex, currentTrack.id]);
 
-  // Smooth Scrubber Interval from YouTube Player Engine
+  // 4. Smooth Scrubber Interval from YouTube Player Engine
   useEffect(() => {
     let interval = null;
     if (isPlaying) {
@@ -235,28 +261,6 @@ export default function App() {
     }
   };
 
-  const handleVolumeChange = (newVol) => {
-    setVolume(newVol);
-    setIsMuted(false);
-    if (ytPlayerRef.current && ytPlayerRef.current.setVolume) {
-      ytPlayerRef.current.setVolume(newVol * 100);
-    }
-  };
-
-  const handleToggleMute = () => {
-    if (isMuted) {
-      setIsMuted(false);
-      if (ytPlayerRef.current && ytPlayerRef.current.setVolume) {
-        ytPlayerRef.current.setVolume(volume * 100);
-      }
-    } else {
-      setIsMuted(true);
-      if (ytPlayerRef.current && ytPlayerRef.current.setVolume) {
-        ytPlayerRef.current.setVolume(0);
-      }
-    }
-  };
-
   const handleSelectTrack = (selectedTrack) => {
     const existingIndex = queue.findIndex(t => t.id === selectedTrack.id);
     if (existingIndex !== -1) {
@@ -284,7 +288,7 @@ export default function App() {
     }
   };
 
-  // Toggle Like Song (Saved to Local/Google Cache)
+  // Toggle Like Song
   const handleToggleLike = () => {
     const exists = likedTracks.some(t => t.id === currentTrack.id);
     const updated = exists 
@@ -294,7 +298,6 @@ export default function App() {
     localStorage.setItem('jumpin_google_liked', JSON.stringify(updated));
   };
 
-  // Play whole playlist (with optional shuffle)
   const handlePlayAll = (tracks, shuffle = false) => {
     if (!tracks || tracks.length === 0) return;
     let list = [...tracks];
@@ -305,118 +308,64 @@ export default function App() {
     setCurrentIndex(0);
     setIsPlaying(true);
     setCurrentTime(0);
-    if (audioRef.current) {
-      audioRef.current.src = list[0].audioUrl;
-      audioRef.current.play().catch(console.warn);
+    if (ytPlayerRef.current?.loadVideoById) {
+      ytPlayerRef.current.loadVideoById(list[0].id);
+      ytPlayerRef.current.playVideo();
     }
   };
 
-  // Open Beranda (Home)
-  const handleOpenBeranda = async () => {
-    setSelectedPlaylist({ name: 'Beranda YouTube (Pilihan Terpopuler)' });
+  // Library Handlers
+  const handleOpenPlaylists = () => {
+    setSelectedPlaylist({ name: 'Playlists' });
+    setPlaylistTracks(CURATED_YOUTUBE_PLAYLISTS);
+    setIsPlaylistModalOpen(true);
+  };
+
+  const handleOpenArtists = async () => {
+    setSelectedPlaylist({ name: 'Artists' });
     setIsPlaylistModalOpen(true);
     setLoadingPlaylist(true);
     try {
-      const tracks = await fetchCategoryTracks('beranda');
+      const tracks = await searchSongs('Bernadya Coldplay Sheila on 7 The Weeknd', googleToken);
       setPlaylistTracks(tracks);
-    } catch (err) {
-      console.error('Fetch beranda error:', err);
     } finally {
       setLoadingPlaylist(false);
     }
   };
 
-  // Open New Releases
-  const handleOpenNew = async () => {
-    setSelectedPlaylist({ name: 'Rilis Baru di YouTube Music' });
-    setIsPlaylistModalOpen(true);
-    setLoadingPlaylist(true);
-    try {
-      const tracks = await fetchCategoryTracks('new');
-      setPlaylistTracks(tracks);
-    } catch (err) {
-      console.error('Fetch new releases error:', err);
-    } finally {
-      setLoadingPlaylist(false);
-    }
-  };
-
-  // Open Albums & Charts
   const handleOpenAlbums = async () => {
-    setSelectedPlaylist({ name: 'Album & Tangga Lagu Terpopuler' });
+    setSelectedPlaylist({ name: 'Albums' });
     setIsPlaylistModalOpen(true);
     setLoadingPlaylist(true);
     try {
       const tracks = await fetchCategoryTracks('charts');
       setPlaylistTracks(tracks);
-    } catch (err) {
-      console.error('Fetch albums/charts error:', err);
     } finally {
       setLoadingPlaylist(false);
     }
   };
 
-  // Open YouTube Trending / Explore Music
-  const handleOpenTrending = async () => {
-    setSelectedPlaylist({ name: 'Trending di YouTube' });
-    setIsPlaylistModalOpen(true);
-    setLoadingPlaylist(true);
-    try {
-      const tracks = await fetchTrendingMusic(googleToken);
-      setPlaylistTracks(tracks);
-    } catch (err) {
-      console.error('Fetch trending music error:', err);
-    } finally {
-      setLoadingPlaylist(false);
-    }
+  const handleOpenLikedSongs = () => {
+    setIsLikedModalOpen(true);
   };
 
-  // Open a specific user or curated YouTube playlist
-  const handleSelectPlaylist = async (playlist) => {
-    setSelectedPlaylist(playlist);
+  const handleSelectCuratedOrUserPlaylist = async (pl) => {
+    setSelectedPlaylist(pl);
     setIsPlaylistModalOpen(true);
     setLoadingPlaylist(true);
-
     try {
-      if (playlist.query) {
-        const tracks = await searchSongs(playlist.query, googleToken);
+      if (pl.query) {
+        const tracks = await searchSongs(pl.query, googleToken);
         setPlaylistTracks(tracks);
       } else {
-        const tracks = await fetchPlaylistTracks(googleToken, playlist.id);
+        const tracks = await fetchPlaylistTracks(googleToken, pl.id);
         setPlaylistTracks(tracks);
       }
-    } catch (err) {
-      console.error('Fetch playlist items error:', err);
     } finally {
       setLoadingPlaylist(false);
     }
   };
 
-  // Open Subscribed Artists
-  const handleOpenArtists = async () => {
-    setSelectedPlaylist({ name: 'Artis & Musisi Pilihan' });
-    setIsPlaylistModalOpen(true);
-    setLoadingPlaylist(true);
-    try {
-      let tracks = [];
-      if (googleToken) {
-        const artists = await fetchSubscribedArtists(googleToken);
-        if (artists && artists.length > 0) {
-          tracks = await searchSongs(artists[0].name + ' best songs', googleToken);
-        }
-      }
-      if (tracks.length === 0) {
-        tracks = await searchSongs('Bernadya Mahalini Juicy Luicy Hindia Coldplay', googleToken);
-      }
-      setPlaylistTracks(tracks);
-    } catch (err) {
-      console.error('Fetch artists error:', err);
-    } finally {
-      setLoadingPlaylist(false);
-    }
-  };
-
-  // Handle Google OAuth Login Success
   const handleLoginSuccess = ({ profile, playlists, likedTracks: importedLiked, accessToken }) => {
     setUser(profile);
     setGoogleToken(accessToken);
@@ -424,19 +373,11 @@ export default function App() {
     if (importedLiked && importedLiked.length > 0) setLikedTracks(importedLiked);
   };
 
-  const handleSignOut = () => {
-    logoutGoogle();
-    setUser(null);
-    setGoogleToken(null);
-    setUserPlaylists([]);
-    setLikedTracks([]);
-  };
-
   const isCurrentTrackLiked = likedTracks.some(t => t.id === currentTrack.id);
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden bg-black text-white">
-      {/* Silent HTML5 Audio Element for iOS background audio compliance */}
+    <div className="relative w-screen h-screen overflow-hidden bg-black text-white flex flex-col font-sans">
+      {/* 1. Silent HTML5 Audio Element for iOS background audio session keeping */}
       <audio 
         ref={audioRef} 
         playsInline 
@@ -444,67 +385,94 @@ export default function App() {
         src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA" 
       />
 
-      {/* Hidden YouTube Engine for direct audio streaming without 403 or server timeouts */}
+      {/* 2. Hidden YouTube Engine for direct audio streaming */}
       <div className="fixed -top-[9999px] -left-[9999px] w-[200px] h-[200px] opacity-0 pointer-events-none overflow-hidden z-[-1]">
         <div id="jumpin-yt-engine"></div>
       </div>
 
-      {/* 1-Second Apple-style Splash Screen */}
+      {/* 3. 1-Second Apple-style Splash Screen (Preserved as requested) */}
       {showSplash && (
         <SplashScreen onFinish={() => setShowSplash(false)} />
       )}
 
-      {/* Main Fullscreen Player */}
-      <NowPlaying
+      {/* 4. Active Tab Content View */}
+      <main className="flex-1 overflow-hidden flex flex-col">
+        {activeTab === 'home' && (
+          <HomeTab
+            user={user}
+            onOpenAuth={() => setIsAuthOpen(true)}
+            onSelectTrack={handleSelectTrack}
+            queue={queue}
+            trendingTracks={trendingTracks}
+          />
+        )}
+
+        {activeTab === 'new' && (
+          <NewTab
+            onSelectTrack={handleSelectTrack}
+            newTracks={newTracks.length > 0 ? newTracks : trendingTracks}
+          />
+        )}
+
+        {activeTab === 'radio' && (
+          <RadioTab
+            onSelectTrack={handleSelectTrack}
+            radioTracks={radioTracks.length > 0 ? radioTracks : trendingTracks}
+          />
+        )}
+
+        {activeTab === 'library' && (
+          <LibraryTab
+            user={user}
+            onOpenAuth={() => setIsAuthOpen(true)}
+            onOpenPlaylists={handleOpenPlaylists}
+            onOpenArtists={handleOpenArtists}
+            onOpenAlbums={handleOpenAlbums}
+            onOpenLikedSongs={handleOpenLikedSongs}
+          />
+        )}
+
+        {activeTab === 'search' && (
+          <SearchTab
+            onSelectTrack={handleSelectTrack}
+            googleToken={googleToken}
+          />
+        )}
+      </main>
+
+      {/* 5. Persistent Mini Player Capsule (Floats above bottom tab bar) */}
+      <MiniPlayer
+        track={currentTrack}
+        isPlaying={isPlaying}
+        onPlayPause={handlePlayPause}
+        onNext={handleNext}
+        onOpenFullscreen={() => setIsPlayerOpen(true)}
+      />
+
+      {/* 6. Apple Music 5-Tab Floating Bottom Navigation Bar */}
+      <BottomTabBar
+        activeTab={activeTab}
+        onSelectTab={(tabId) => setActiveTab(tabId)}
+      />
+
+      {/* 7. Fullscreen Lyrics & Now Playing Modal (Matches Screenshot 3) */}
+      <FullscreenPlayer
+        isOpen={isPlayerOpen}
+        onClose={() => setIsPlayerOpen(false)}
         track={currentTrack}
         isPlaying={isPlaying}
         currentTime={currentTime}
         duration={duration}
-        volume={volume}
-        isMuted={isMuted}
-        isLiked={isCurrentTrackLiked}
-        onToggleLike={handleToggleLike}
         onPlayPause={handlePlayPause}
         onNext={handleNext}
         onPrev={handlePrev}
         onSeek={handleSeek}
-        onVolumeChange={handleVolumeChange}
-        onToggleMute={handleToggleMute}
-        onOpenSearch={() => setIsSearchOpen(true)}
+        isLiked={isCurrentTrackLiked}
+        onToggleLike={handleToggleLike}
         onOpenQueue={() => setIsQueueOpen(true)}
-        onOpenDrawer={() => setIsDrawerOpen(true)}
       />
 
-      {/* Navigation Library Drawer with Real User Playlists */}
-      <SidebarDrawer
-        isOpen={isDrawerOpen}
-        onClose={() => setIsDrawerOpen(false)}
-        onOpenSearch={() => setIsSearchOpen(true)}
-        onOpenBeranda={handleOpenBeranda}
-        onOpenNew={handleOpenNew}
-        onOpenTrending={handleOpenTrending}
-        onOpenAlbums={handleOpenAlbums}
-        onOpenQueue={() => setIsQueueOpen(true)}
-        onOpenLikedMusic={() => setIsLikedModalOpen(true)}
-        onOpenArtists={handleOpenArtists}
-        onOpenAuth={() => setIsAuthOpen(true)}
-        onSelectPlaylist={handleSelectPlaylist}
-        playlists={userPlaylists}
-        curatedPlaylists={CURATED_YOUTUBE_PLAYLISTS}
-        user={user}
-        onSignOut={handleSignOut}
-        likedTracksCount={likedTracks.length}
-      />
-
-      {/* Search Modal with Google Token */}
-      <SearchModal
-        isOpen={isSearchOpen}
-        onClose={() => setIsSearchOpen(false)}
-        onSelectTrack={handleSelectTrack}
-        googleToken={googleToken}
-      />
-
-      {/* Playing Queue Modal */}
+      {/* 8. Queue Modal */}
       <QueueModal
         isOpen={isQueueOpen}
         onClose={() => setIsQueueOpen(false)}
@@ -513,36 +481,35 @@ export default function App() {
         onSelectTrack={handleSelectTrack}
       />
 
-      {/* Liked Songs Playlist Modal */}
-      <PlaylistModal
-        isOpen={isLikedModalOpen}
-        onClose={() => setIsLikedModalOpen(false)}
-        title="Liked Music"
-        subtitle="Imported from YouTube Music"
-        tracks={likedTracks}
-        isLikedView={true}
-        currentTrackId={currentTrack.id}
-        isPlaying={isPlaying}
-        onPlayTrack={handleSelectTrack}
-        onPlayAll={handlePlayAll}
-      />
-
-      {/* Selected YouTube Playlist Modal */}
+      {/* 9. Playlist Modal */}
       <PlaylistModal
         isOpen={isPlaylistModalOpen}
         onClose={() => setIsPlaylistModalOpen(false)}
-        title={selectedPlaylist?.name || "YouTube Playlist"}
-        subtitle={loadingPlaylist ? "Memuat lagu..." : `${playlistTracks.length} songs from YouTube`}
+        title={selectedPlaylist?.name || 'Playlist'}
+        subtitle={loadingPlaylist ? 'Memuat...' : `${playlistTracks.length} lagu`}
         tracks={playlistTracks}
         loading={loadingPlaylist}
-        isLikedView={false}
-        currentTrackId={currentTrack.id}
+        currentTrackId={currentTrack?.id}
         isPlaying={isPlaying}
         onPlayTrack={handleSelectTrack}
         onPlayAll={handlePlayAll}
       />
 
-      {/* Real Google OAuth Sign-in Modal */}
+      {/* 10. Liked Songs Modal */}
+      <PlaylistModal
+        isOpen={isLikedModalOpen}
+        onClose={() => setIsLikedModalOpen(false)}
+        title="Songs"
+        subtitle="Saved & Liked Music"
+        tracks={likedTracks}
+        isLikedView={true}
+        currentTrackId={currentTrack?.id}
+        isPlaying={isPlaying}
+        onPlayTrack={handleSelectTrack}
+        onPlayAll={handlePlayAll}
+      />
+
+      {/* 11. Google OAuth Sign-in Modal */}
       <AuthModal
         isOpen={isAuthOpen}
         onClose={() => setIsAuthOpen(false)}
