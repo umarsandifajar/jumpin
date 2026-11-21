@@ -25,7 +25,7 @@ export default async function handler(req, res) {
     const now = Date.now();
 
     if (!cached || now - cached.timestamp > CACHE_TTL) {
-      const ytdl = new Ytdl();
+      const ytdl = new Ytdl({ clients: ['tv', 'web_embedded'] });
       const info = await ytdl.getInfo(`https://www.youtube.com/watch?v=${id}`);
       const audioFormats = info.formats.filter(f => f.hasAudio && !f.hasVideo);
 
