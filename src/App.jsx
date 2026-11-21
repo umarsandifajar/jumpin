@@ -66,9 +66,12 @@ export default function App() {
   const ytPlayerRef = useRef(null);
   const currentTrack = queue[currentIndex] || INITIAL_TRACKS[0];
 
-  // Awaken iOS WebAudio session to establish background audio privilege on iOS Safari
+  // Awaken iOS WebAudio & AudioSession to establish background audio privilege on iOS Safari
   const initAudioSession = () => {
     try {
+      if ('audioSession' in navigator) {
+        navigator.audioSession.type = 'playback';
+      }
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       if (AudioContext && !audioCtxRef.current) {
         audioCtxRef.current = new AudioContext();
@@ -165,11 +168,19 @@ export default function App() {
   useEffect(() => {
     const handleVisibility = () => {
       if (document.visibilityState === 'hidden') {
-        if (isPlaying && audioRef.current && audioRef.current.paused) {
-          audioRef.current.play().catch(() => {});
+        if ('audioSession' in navigator) {
+          try { navigator.audioSession.type = 'playback'; } catch {}
         }
-        if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
-          audioCtxRef.current.resume().catch(() => {});
+        if (isPlaying) {
+          if (audioRef.current && audioRef.current.paused && audioRef.current.src) {
+            audioRef.current.play().catch(() => {});
+          }
+          if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
+            audioCtxRef.current.resume().catch(() => {});
+          }
+          if (ytPlayerRef.current?.playVideo && (!audioRef.current || audioRef.current.paused)) {
+            try { ytPlayerRef.current.playVideo(); } catch {}
+          }
         }
         if ('mediaSession' in navigator) {
           navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
