@@ -138,6 +138,10 @@ export default function App() {
               if (event.data === 1) {
                 setIsPlaying(true);
                 if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
+                try {
+                  const dur = ytPlayerRef.current?.getDuration?.();
+                  if (dur && dur > 0) setDuration(dur);
+                } catch {}
               } else if (event.data === 2) {
                 // If HTML5 audio is playing, do not stop isPlaying
                 if (audioRef.current && !audioRef.current.paused) return;
@@ -163,6 +167,48 @@ export default function App() {
       window.onYouTubeIframeAPIReady = initYT;
     }
   }, []);
+
+  // 2b. Synchronize playback time & progress scrubber continuously from active engine
+  useEffect(() => {
+    let timer;
+    if (isPlaying) {
+      timer = setInterval(() => {
+        const isLiveRadio = Boolean(currentTrack?.isLive || currentTrack?.isRadio || currentTrack?.streamUrl);
+        if (isLiveRadio) return;
+
+        // If native audio is actively playing, sync from audioRef
+        if (audioRef.current && !audioRef.current.paused && audioRef.current.duration) {
+          const cur = audioRef.current.currentTime || 0;
+          const dur = audioRef.current.duration || 0;
+          if (!isNaN(cur) && cur >= 0) setCurrentTime(cur);
+          if (!isNaN(dur) && dur > 0) setDuration(dur);
+          return;
+        }
+
+        // If YouTube engine is playing, sync from ytPlayerRef
+        if (ytPlayerRef.current?.getCurrentTime) {
+          try {
+            const cur = ytPlayerRef.current.getCurrentTime() || 0;
+            const dur = ytPlayerRef.current.getDuration() || currentTrack?.duration || 0;
+            if (!isNaN(cur) && cur >= 0) setCurrentTime(cur);
+            if (!isNaN(dur) && dur > 0) {
+              setDuration(dur);
+              if ('mediaSession' in navigator && 'setPositionState' in navigator.mediaSession) {
+                try {
+                  navigator.mediaSession.setPositionState({
+                    duration: Math.max(dur, 1),
+                    playbackRate: 1,
+                    position: Math.min(cur, dur)
+                  });
+                } catch {}
+              }
+            }
+          } catch {}
+        }
+      }, 500);
+    }
+    return () => clearInterval(timer);
+  }, [isPlaying, currentTrack?.id]);
 
   // 3. Keep audio session and MediaSession alive during iOS lock screen / app minimize
   useEffect(() => {
@@ -228,16 +274,21 @@ export default function App() {
     setIsPlaying(true);
     if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
 
-    if (audioRef.current && audioRef.current.src) {
-      audioRef.current.play().catch(() => {
-        if (ytPlayerRef.current?.playVideo) {
+    const isLiveRadio = Boolean(currentTrack?.isLive || currentTrack?.isRadio || currentTrack?.streamUrl);
+
+    if (isLiveRadio) {
+      if (audioRef.current) {
+        audioRef.current.play().catch(console.warn);
+      }
+    } else {
+      if (ytPlayerRef.current?.playVideo) {
+        try {
           ytPlayerRef.current.setVolume(100);
           ytPlayerRef.current.playVideo();
+        } catch (e) {
+          console.warn('YouTube playVideo error:', e);
         }
-      });
-    } else if (ytPlayerRef.current?.playVideo) {
-      ytPlayerRef.current.setVolume(100);
-      ytPlayerRef.current.playVideo();
+      }
     }
   };
 
@@ -309,6 +360,7 @@ export default function App() {
     }
     setIsPlaying(true);
     setCurrentTime(0);
+    setDuration(selectedTrack.duration || 180);
 
     // Awaken iOS CoreAudio session on user touch gesture
     initAudioSession();
@@ -324,24 +376,21 @@ export default function App() {
         audioRef.current.play().then(() => setIsPlaying(true)).catch(console.warn);
       }
     } else {
-      // Pause standby YouTube player so it never interferes or causes iOS WebKit iframe pause
-      if (ytPlayerRef.current && ytPlayerRef.current.pauseVideo) {
-        try { ytPlayerRef.current.pauseVideo(); } catch {}
+      // Stop radio audio stream so it doesn't collide
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.removeAttribute('src');
       }
 
-      // Stream YouTube track directly through HTML5 Audio element for iOS Background Audio persistence
-      if (audioRef.current) {
-        audioRef.current.src = `/api/stream?id=${selectedTrack.id}`;
-        audioRef.current.play().then(() => {
-          setIsPlaying(true);
-        }).catch((err) => {
-          console.warn('HTML5 Audio direct stream error, activating YouTube iframe fallback:', err);
-          if (ytPlayerRef.current?.setVolume) ytPlayerRef.current.setVolume(100);
-          if (ytPlayerRef.current?.loadVideoById) {
-            ytPlayerRef.current.loadVideoById(selectedTrack.id);
-            ytPlayerRef.current.playVideo();
-          }
-        });
+      // Play YouTube track directly through YouTube Player engine
+      if (ytPlayerRef.current?.loadVideoById) {
+        try {
+          ytPlayerRef.current.setVolume(100);
+          ytPlayerRef.current.loadVideoById(selectedTrack.id);
+          ytPlayerRef.current.playVideo();
+        } catch (err) {
+          console.warn('Error loading video on select:', err);
+        }
       }
     }
 

@@ -41,47 +41,45 @@ export default function RadioTab({ onSelectTrack, currentTrackId, isPlaying }) {
                 <img
                   src={station.cover}
                   alt={station.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 brightness-75"
+                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 brightness-50"
                 />
-                <div className={`absolute inset-0 bg-gradient-to-r ${station.gradient} opacity-75 mix-blend-multiply`} />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent p-5" />
+                <div className={`absolute inset-0 bg-gradient-to-r ${station.gradient} opacity-60 mix-blend-multiply`} />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-black/20" />
 
-                {/* Card Content */}
-                <div className="relative z-10 p-5 h-full flex flex-col justify-between">
+                {/* Card Content - Guaranteed Visible */}
+                <div className="relative z-10 p-5 h-full flex flex-col justify-between pointer-events-none">
                   {/* Top Bar: LIVE Indicator + Frequency Badge */}
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/10">
+                    <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/10">
                       <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
                       <span className="text-[10px] font-black text-white uppercase tracking-wider">
                         LIVE ON AIR
                       </span>
                     </div>
 
-                    <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-white font-mono text-[11px] font-bold backdrop-blur-md">
+                    <span className="px-3 py-1 rounded-full bg-white/20 text-white font-mono text-xs font-black backdrop-blur-md border border-white/20 shadow-md">
                       {station.frequency}
                     </span>
                   </div>
 
-                  {/* Bottom Info: Title, City, Tagline, Description + Play Button */}
+                  {/* Bottom Info: Station Name, City, Tagline + Play Button */}
                   <div className="flex items-end justify-between">
-                    <div className="pr-4">
-                      <p className="text-xs font-semibold text-white/70 uppercase tracking-wider">
+                    <div className="pr-4 pointer-events-auto">
+                      <p className="text-[11px] font-bold text-white/70 uppercase tracking-wider">
                         {station.city} • {station.category}
                       </p>
-                      <h3 className="text-2xl font-black text-white drop-shadow-md leading-tight mt-0.5">
+                      <h3 className="text-2xl sm:text-3xl font-black text-white drop-shadow-lg leading-tight mt-0.5">
                         {station.name}
                       </h3>
-                      <p className="text-xs text-white/95 font-semibold line-clamp-1 mt-1">
+                      <p className="text-xs text-white/95 font-semibold line-clamp-1 mt-1 drop-shadow">
                         {station.tagline}
-                      </p>
-                      <p className="text-[11px] text-white/60 line-clamp-1 mt-0.5">
-                        {station.description}
                       </p>
                     </div>
 
                     {/* Play/Soundwave Button */}
                     <button 
-                      className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 shadow-xl transition-all ${
+                      type="button"
+                      className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 shadow-2xl transition-all pointer-events-auto ${
                         isCurrentStation && isPlaying
                           ? 'bg-rose-500 text-white scale-105'
                           : 'bg-white text-black hover:scale-110 active:scale-95'
