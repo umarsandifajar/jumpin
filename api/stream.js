@@ -99,7 +99,6 @@ export default async function handler(req, res) {
   } catch (err) {
     console.warn(`[Stream Error ${id}]:`, err.message);
     formatCache.delete(id);
+    return res.status(502).json({ error: 'Audio stream temporarily unavailable', details: err.message });
   }
-
-  return res.status(502).send('Audio stream temporarily unavailable');
 }
