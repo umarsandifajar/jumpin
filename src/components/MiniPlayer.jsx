@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, Pause, SkipForward } from 'lucide-react';
+import { Play, Pause, SkipForward, Radio } from 'lucide-react';
 
 export default function MiniPlayer({
   track,
@@ -10,6 +10,8 @@ export default function MiniPlayer({
 }) {
   if (!track) return null;
 
+  const isLiveRadio = Boolean(track.isLive || track.isRadio || track.streamUrl);
+
   return (
     <div className="fixed bottom-[78px] inset-x-3 sm:inset-x-6 max-w-lg mx-auto z-40 pointer-events-auto animate-slide-up">
       <div 
@@ -18,17 +20,25 @@ export default function MiniPlayer({
       >
         {/* Left: Album Cover + Title + Artist */}
         <div className="flex items-center space-x-3 truncate flex-1 min-w-0 pr-2">
-          <img
-            src={track.cover}
-            alt={track.title}
-            className="w-10 h-10 rounded-xl object-cover shadow-md shrink-0 border border-white/10 group-hover:scale-105 transition-transform"
-          />
+          <div className="relative shrink-0">
+            <img
+              src={track.cover}
+              alt={track.title}
+              className="w-10 h-10 rounded-xl object-cover shadow-md border border-white/10 group-hover:scale-105 transition-transform"
+            />
+            {isLiveRadio && (
+              <span className="absolute -top-1 -right-1 px-1 py-0.2 rounded-full bg-rose-600 text-[8px] font-bold text-white uppercase tracking-wider shadow">
+                LIVE
+              </span>
+            )}
+          </div>
           <div className="truncate">
-            <p className="text-xs sm:text-sm font-bold text-white truncate leading-tight">
-              {track.title}
+            <p className="text-xs sm:text-sm font-bold text-white truncate leading-tight flex items-center space-x-1">
+              <span>{track.title || track.name}</span>
             </p>
-            <p className="text-[11px] text-white/60 truncate mt-0.5 font-medium">
-              {track.artist}
+            <p className="text-[11px] text-white/60 truncate mt-0.5 font-medium flex items-center space-x-1">
+              {isLiveRadio && <Radio size={10} className="text-rose-400 shrink-0" />}
+              <span className="truncate">{track.artist || track.frequency || 'Live Radio'}</span>
             </p>
           </div>
         </div>

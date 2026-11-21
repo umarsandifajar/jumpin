@@ -1,105 +1,159 @@
 import React from 'react';
-import { Radio, Play, Sparkles } from 'lucide-react';
+import { Radio, Play, Volume2 } from 'lucide-react';
+import { FAMOUS_RADIO_STATIONS } from '../../services/radioStations';
 
-export default function RadioTab({ onSelectTrack, radioTracks = [] }) {
-  const stations = [
-    {
-      id: 'jumpin_1',
-      name: 'JumpIn 1',
-      tagline: 'Always live. The world\'s best new music.',
-      cover: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80',
-      gradient: 'from-[#007AFF] via-[#5856D6] to-[#AF52DE]'
-    },
-    {
-      id: 'indo_hits_radio',
-      name: 'Indonesian Hits Radio',
-      tagline: 'Lagu pop terbaik Indonesia 24 jam non-stop.',
-      cover: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80',
-      gradient: 'from-[#FF2D55] via-[#FF375F] to-[#FF9500]'
-    },
-    {
-      id: 'chill_lofi_radio',
-      name: 'Lofi Chill Radio',
-      tagline: 'Beats to relax, study, and vibe to.',
-      cover: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=600&auto=format&fit=crop&q=80',
-      gradient: 'from-[#34C759] via-[#30B0C7] to-[#007AFF]'
-    }
-  ];
+export default function RadioTab({ onSelectTrack, currentTrackId, isPlaying }) {
+  const featuredStations = FAMOUS_RADIO_STATIONS.slice(0, 3);
+  const otherStations = FAMOUS_RADIO_STATIONS.slice(3);
 
   return (
     <div className="flex-1 overflow-y-auto custom-scrollbar px-4 sm:px-6 pt-12 pb-36 select-none max-w-2xl mx-auto w-full">
       {/* Header: Large Bold 'Radio' */}
-      <div className="pb-4 border-b border-white/5">
-        <h1 className="text-3xl font-black text-white tracking-tight">Radio</h1>
+      <div className="flex items-center justify-between pb-4 border-b border-white/5">
+        <div>
+          <h1 className="text-3xl font-black text-white tracking-tight">Radio</h1>
+          <p className="text-xs text-white/50 font-medium mt-0.5">
+            Stasiun Radio Terkemuka • Siaran Langsung 24 Jam Tanpa Login
+          </p>
+        </div>
+        <div className="p-2 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400">
+          <Radio size={20} className="animate-pulse" />
+        </div>
       </div>
 
-      {/* Featured Stations */}
-      <div className="mt-6 space-y-4">
-        {stations.map((st) => (
-          <div
-            key={st.id}
-            onClick={() => {
-              if (radioTracks.length > 0) onSelectTrack(radioTracks[0]);
-            }}
-            className="group relative h-[180px] rounded-3xl overflow-hidden cursor-pointer shadow-xl border border-white/10 active:scale-[0.98] transition-all"
-          >
-            <img
-              src={st.cover}
-              alt={st.name}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-            />
-            <div className={`absolute inset-0 bg-gradient-to-r ${st.gradient} opacity-80 mix-blend-multiply`} />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-5 flex flex-col justify-between">
-              <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-md w-fit">
-                <Radio size={13} className="text-white animate-pulse" />
-                <span className="text-[10px] font-bold text-white uppercase tracking-wider">
-                  Live Station
-                </span>
-              </div>
+      {/* Section 1: Featured Top Stations Carousel / Cards */}
+      <div className="mt-6">
+        <h2 className="text-xl font-bold text-white tracking-tight mb-3">
+          Stasiun Unggulan Indonesia
+        </h2>
 
-              <div>
-                <h3 className="text-2xl font-black text-white drop-shadow-md">
-                  {st.name}
-                </h3>
-                <p className="text-xs text-white/85 font-medium mt-1">
-                  {st.tagline}
-                </p>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+        <div className="space-y-4">
+          {featuredStations.map((station) => {
+            const isCurrentStation = currentTrackId === station.id;
 
-      {/* Instant Radio Playlist Songs */}
-      {radioTracks.length > 0 && (
-        <div className="mt-8">
-          <h2 className="text-xl font-bold text-white tracking-tight mb-3">
-            On Air Tracks
-          </h2>
-          <div className="space-y-2">
-            {radioTracks.slice(0, 8).map((item) => (
+            return (
               <div
-                key={item.id}
-                onClick={() => onSelectTrack(item)}
-                className="flex items-center p-2 rounded-2xl hover:bg-white/10 active:bg-white/15 transition cursor-pointer group"
+                key={station.id}
+                onClick={() => onSelectTrack(station)}
+                className="group relative h-[190px] rounded-3xl overflow-hidden cursor-pointer shadow-2xl border border-white/10 active:scale-[0.98] transition-all bg-[#1c1c1e]"
               >
+                {/* Background Image with Gradient Overlay */}
                 <img
-                  src={item.cover}
-                  alt={item.title}
-                  className="w-12 h-12 rounded-xl object-cover shadow mr-3 shrink-0"
+                  src={station.cover}
+                  alt={station.name}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 brightness-75"
                 />
-                <div className="flex-1 min-w-0 pr-2">
-                  <p className="text-sm font-semibold truncate text-white">{item.title}</p>
-                  <p className="text-xs text-white/55 truncate mt-0.5">{item.artist}</p>
+                <div className={`absolute inset-0 bg-gradient-to-r ${station.gradient} opacity-75 mix-blend-multiply`} />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent p-5 flex flex-col justify-between" />
+
+                {/* Card Content */}
+                <div className="relative z-10 p-5 h-full flex flex-col justify-between">
+                  {/* Top Bar: LIVE Indicator + Frequency Badge */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/10">
+                      <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+                      <span className="text-[10px] font-black text-white uppercase tracking-wider">
+                        LIVE ON AIR
+                      </span>
+                    </div>
+
+                    <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-white font-mono text-[11px] font-bold backdrop-blur-md">
+                      {station.frequency}
+                    </span>
+                  </div>
+
+                  {/* Bottom Info: Title, City, Tagline + Play Button */}
+                  <div className="flex items-end justify-between">
+                    <div className="pr-4">
+                      <p className="text-xs font-semibold text-white/70 uppercase tracking-wider">
+                        {station.city} • {station.category}
+                      </p>
+                      <h3 className="text-2xl font-black text-white drop-shadow-md leading-tight mt-0.5">
+                        {station.name}
+                      </h3>
+                      <p className="text-xs text-white/90 font-medium line-clamp-1 mt-1">
+                        {station.tagline}
+                      </p>
+                    </div>
+
+                    {/* Play/Soundwave Button */}
+                    <button 
+                      className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 shadow-xl transition-all ${
+                        isCurrentStation && isPlaying
+                          ? 'bg-rose-500 text-white scale-105'
+                          : 'bg-white text-black hover:scale-110 active:scale-95'
+                      }`}
+                    >
+                      {isCurrentStation && isPlaying ? (
+                        <Volume2 size={22} className="animate-pulse" />
+                      ) : (
+                        <Play size={20} className="fill-current ml-0.5" />
+                      )}
+                    </button>
+                  </div>
                 </div>
-                <button className="p-2 rounded-full bg-white/10 text-white/80 group-hover:bg-[#007AFF] group-hover:text-white transition shrink-0">
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Section 2: More Famous Stations (List Grid) */}
+      <div className="mt-8">
+        <h2 className="text-xl font-bold text-white tracking-tight mb-3">
+          Stasiun Lainnya
+        </h2>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {otherStations.map((station) => {
+            const isCurrentStation = currentTrackId === station.id;
+
+            return (
+              <div
+                key={station.id}
+                onClick={() => onSelectTrack(station)}
+                className={`flex items-center p-3 rounded-2xl border transition-all cursor-pointer group active:scale-[0.98] ${
+                  isCurrentStation 
+                    ? 'bg-white/15 border-rose-500/50' 
+                    : 'bg-[#1c1c1e] border-white/5 hover:bg-white/10'
+                }`}
+              >
+                <div className="relative w-14 h-14 rounded-xl overflow-hidden shrink-0 mr-3 border border-white/10">
+                  <img
+                    src={station.cover}
+                    alt={station.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                  />
+                  <div className={`absolute inset-0 bg-gradient-to-br ${station.gradient} opacity-50`} />
+                  <span className="absolute bottom-1 right-1 w-2 h-2 rounded-full bg-rose-500 shadow-sm" />
+                </div>
+
+                <div className="flex-1 min-w-0 pr-2">
+                  <p className="text-xs text-rose-400 font-bold uppercase tracking-wider">
+                    {station.frequency}
+                  </p>
+                  <p className="text-sm font-bold text-white truncate leading-tight mt-0.5">
+                    {station.name}
+                  </p>
+                  <p className="text-[11px] text-white/50 truncate mt-0.5">
+                    {station.tagline}
+                  </p>
+                </div>
+
+                <button
+                  className={`p-2.5 rounded-full transition shrink-0 ${
+                    isCurrentStation && isPlaying
+                      ? 'bg-rose-500 text-white'
+                      : 'bg-white/10 text-white group-hover:bg-[#007AFF]'
+                  }`}
+                >
                   <Play size={13} className="fill-current ml-0.5" />
                 </button>
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
-      )}
+      </div>
     </div>
   );
 }

@@ -22,23 +22,195 @@ export const INITIAL_TRACKS = [
     isStream: true
   },
   {
-    id: 'dX3k_QDnzHE',
-    title: 'Midnight City',
-    artist: 'M83',
-    album: 'Hurry Up, We\'re Dreaming',
-    cover: 'https://i.ytimg.com/vi/dX3k_QDnzHE/hq720.jpg',
-    audioUrl: '/api/stream?id=dX3k_QDnzHE',
-    duration: 243,
+    id: '1fTszV_n7L4',
+    title: 'Satu Bulan',
+    artist: 'Bernadya',
+    album: 'Sialnya, Hidup Harus Tetap Berjalan',
+    cover: 'https://i.ytimg.com/vi/1fTszV_n7L4/hqdefault.jpg',
+    duration: 195,
+    isStream: true
+  },
+  {
+    id: '3JgE3G586s0',
+    title: 'Gala Bunga Matahari',
+    artist: 'Sal Priadi',
+    album: 'MARKERS AND SUCH PENS FLASHDISKS',
+    cover: 'https://i.ytimg.com/vi/3JgE3G586s0/hqdefault.jpg',
+    duration: 235,
+    isStream: true
+  }
+];
+
+// 1. Kurasi Khusus: New Music (Lagu-lagu Baru Terpopuler 2026)
+export const NEW_MUSIC_TRACKS = [
+  {
+    id: '1fTszV_n7L4',
+    title: 'Satu Bulan',
+    artist: 'Bernadya',
+    album: 'Sialnya, Hidup Harus Tetap Berjalan',
+    cover: 'https://i.ytimg.com/vi/1fTszV_n7L4/hqdefault.jpg',
+    duration: 195,
+    isStream: true
+  },
+  {
+    id: '3JgE3G586s0',
+    title: 'Gala Bunga Matahari',
+    artist: 'Sal Priadi',
+    album: 'MARKERS AND SUCH PENS FLASHDISKS',
+    cover: 'https://i.ytimg.com/vi/3JgE3G586s0/hqdefault.jpg',
+    duration: 235,
+    isStream: true
+  },
+  {
+    id: 'd5gxPgJNP3Y',
+    title: 'BIRDS OF A FEATHER',
+    artist: 'Billie Eilish',
+    album: 'HIT ME HARD AND SOFT',
+    cover: 'https://i.ytimg.com/vi/d5gxPgJNP3Y/hqdefault.jpg',
+    duration: 190,
+    isStream: true
+  },
+  {
+    id: 'eVli-tstM5E',
+    title: 'Espresso',
+    artist: 'Sabrina Carpenter',
+    album: 'Short n\' Sweet',
+    cover: 'https://i.ytimg.com/vi/eVli-tstM5E/hqdefault.jpg',
+    duration: 175,
+    isStream: true
+  },
+  {
+    id: 'kPa7bsKwL-8',
+    title: 'Die With A Smile',
+    artist: 'Lady Gaga & Bruno Mars',
+    album: 'Die With A Smile',
+    cover: 'https://i.ytimg.com/vi/kPa7bsKwL-8/hqdefault.jpg',
+    duration: 251,
+    isStream: true
+  },
+  {
+    id: 'b8H-L4088Zg',
+    title: 'Too Much Of A Good Thing',
+    artist: 'NIKI',
+    album: 'Buzz',
+    cover: 'https://i.ytimg.com/vi/b8H-L4088Zg/hqdefault.jpg',
+    duration: 170,
+    isStream: true
+  }
+];
+
+// 2. Kurasi Khusus: Chill Music (Lagu-lagu Santai, Akustik & Sore Hari)
+export const CHILL_MUSIC_TRACKS = [
+  {
+    id: 'w83y_oZf2nU',
+    title: 'Rayuan Perempuan Gila',
+    artist: 'Nadin Amizah',
+    album: 'Untuk Dunia, Cinta, dan Kotornya',
+    cover: 'https://i.ytimg.com/vi/w83y_oZf2nU/hqdefault.jpg',
+    duration: 320,
+    isStream: true
+  },
+  {
+    id: 'FwA648T9v68',
+    title: 'Hati-Hati di Jalan',
+    artist: 'Tulus',
+    album: 'Manusia',
+    cover: 'https://i.ytimg.com/vi/FwA648T9v68/hqdefault.jpg',
+    duration: 242,
+    isStream: true
+  },
+  {
+    id: '2rgepWg440k',
+    title: 'To the Bone',
+    artist: 'Pamungkas',
+    album: 'Flying Solo',
+    cover: 'https://i.ytimg.com/vi/2rgepWg440k/hqdefault.jpg',
+    duration: 344,
+    isStream: true
+  },
+  {
+    id: 'Y2bE3X-gD2k',
+    title: 'Bitterlove',
+    artist: 'Ardhito Pramono',
+    album: 'Craving',
+    cover: 'https://i.ytimg.com/vi/Y2bE3X-gD2k/hqdefault.jpg',
+    duration: 220,
+    isStream: true
+  },
+  {
+    id: 'o_4g9yE0xVs',
+    title: 'Runtuh',
+    artist: 'Feby Putri ft. Fiersa Besari',
+    album: 'Riuh',
+    cover: 'https://i.ytimg.com/vi/o_4g9yE0xVs/hqdefault.jpg',
+    duration: 228,
     isStream: true
   },
   {
     id: 'jfKfPfyJRdk',
-    title: 'Lofi Hip Hop Radio',
+    title: 'Lofi Hip Hop Chill Beats',
     artist: 'Lofi Girl',
     album: 'Beats to Relax/Study to',
     cover: 'https://i.ytimg.com/vi/jfKfPfyJRdk/hq720.jpg',
-    audioUrl: '/api/stream?id=jfKfPfyJRdk',
     duration: 180,
+    isStream: true
+  }
+];
+
+// 3. Kurasi Khusus: Trending YouTube Saat Ini
+export const TRENDING_TRACKS = [
+  {
+    id: '8YQZg_y-J18',
+    title: 'Sigar',
+    artist: 'Denny Caknan',
+    album: 'Sigar Single',
+    cover: 'https://i.ytimg.com/vi/8YQZg_y-J18/hqdefault.jpg',
+    duration: 305,
+    isStream: true
+  },
+  {
+    id: 'Z-XyB03U-3o',
+    title: 'Kata Mereka Ini Berlebihan',
+    artist: 'Bernadya',
+    album: 'Sialnya, Hidup Harus Tetap Berjalan',
+    cover: 'https://i.ytimg.com/vi/Z-XyB03U-3o/hqdefault.jpg',
+    duration: 198,
+    isStream: true
+  },
+  {
+    id: 'kPa7bsKwL-8',
+    title: 'Die With A Smile',
+    artist: 'Lady Gaga & Bruno Mars',
+    album: 'Die With A Smile',
+    cover: 'https://i.ytimg.com/vi/kPa7bsKwL-8/hqdefault.jpg',
+    duration: 251,
+    isStream: true
+  },
+  {
+    id: 'xGg7_8k8pW4',
+    title: 'Lantas',
+    artist: 'Juicy Luicy',
+    album: 'Sentimental',
+    cover: 'https://i.ytimg.com/vi/xGg7_8k8pW4/hqdefault.jpg',
+    duration: 230,
+    isStream: true
+  },
+  {
+    id: 'Wv7Z78tFk6U',
+    title: 'Mati-Matian',
+    artist: 'Mahalini',
+    album: 'Mati-Matian Single',
+    cover: 'https://i.ytimg.com/vi/Wv7Z78tFk6U/hqdefault.jpg',
+    duration: 245,
+    isStream: true
+  },
+  {
+    id: 'bN0-Xk_zHrk',
+    title: 'Kuingin Pisah',
+    artist: 'Tiara Andini',
+    album: 'Kuingin Pisah Single',
+    cover: 'https://i.ytimg.com/vi/bN0-Xk_zHrk/hqdefault.jpg',
+    duration: 215,
     isStream: true
   }
 ];
@@ -46,9 +218,9 @@ export const INITIAL_TRACKS = [
 export const CURATED_YOUTUBE_PLAYLISTS = [
   {
     id: 'curated_indo_hits',
-    name: 'Top Hits Indonesia 2025',
+    name: 'Top Hits Indonesia 2026',
     itemCount: 25,
-    query: 'top songs indonesia 2025 viral',
+    query: 'top songs indonesia 2026 viral',
     cover: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&auto=format&fit=crop&q=80'
   },
   {
@@ -62,7 +234,7 @@ export const CURATED_YOUTUBE_PLAYLISTS = [
     id: 'curated_global_hits',
     name: 'Today\'s Top Global Hits',
     itemCount: 30,
-    query: 'todays top hits pop 2025',
+    query: 'todays top hits pop 2026',
     cover: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&auto=format&fit=crop&q=80'
   },
   {
@@ -81,7 +253,7 @@ export const CURATED_YOUTUBE_PLAYLISTS = [
   }
 ];
 
-// Fetch categorized music from YouTube Music (Beranda, New, Charts, Albums)
+// Fetch categorized music from YouTube Music
 export async function fetchCategoryTracks(type) {
   try {
     const res = await fetch(`/api/search?type=${encodeURIComponent(type)}`);
@@ -99,7 +271,6 @@ export async function fetchCategoryTracks(type) {
 export async function searchSongs(query, googleToken = null) {
   if (!query || !query.trim()) return [];
 
-  // 1. Try server search endpoint (/api/search) first - fastest Innertube search
   try {
     const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
     if (res.ok) {
@@ -112,7 +283,6 @@ export async function searchSongs(query, googleToken = null) {
     console.warn('Server search failed:', err);
   }
 
-  // 2. If user has Google Token, try official YouTube Data API
   if (googleToken) {
     try {
       const results = await searchYouTubeOfficial(query, googleToken);
@@ -120,18 +290,17 @@ export async function searchSongs(query, googleToken = null) {
         return results;
       }
     } catch (err) {
-      console.warn('Official YouTube search error:', err);
+      console.warn('Google official search failed:', err);
     }
   }
 
-  // 3. Fallback filter from local tracks
-  return INITIAL_TRACKS.filter(t => 
-    t.title.toLowerCase().includes(query.toLowerCase()) || 
-    t.artist.toLowerCase().includes(query.toLowerCase())
+  // Graceful fallback for offline / disconnected states
+  const lowerQuery = query.toLowerCase();
+  const allKnown = [...NEW_MUSIC_TRACKS, ...CHILL_MUSIC_TRACKS, ...TRENDING_TRACKS];
+  const matched = allKnown.filter(t => 
+    t.title.toLowerCase().includes(lowerQuery) || 
+    t.artist.toLowerCase().includes(lowerQuery)
   );
-}
 
-// Fetch stream URL for a given YouTube video ID
-export async function getAudioStreamUrl(videoId) {
-  return `/api/stream?id=${videoId}`;
+  return matched.length > 0 ? matched : TRENDING_TRACKS;
 }

@@ -1,4 +1,5 @@
-// Dynamic Lyrics Service with Real Curated & Synced Lyrics
+// Dynamic Lyrics Service with Real LRCLIB API Integration + Preset Fallbacks
+
 export const PRESET_LYRICS = {
   'cinta sepihak': `[Verse 1]
 Kau lari pagi ku kejar tanpa alas
@@ -30,18 +31,18 @@ Milli point two just to hurt you, ah
 All red Lamb' just to tease you, ah
 None of these toys on lease too, ah
 Made your whole year in a week too, yah
-Main bitch out your league too, ah
-Side bitch out of your league too, ah
+Main girl out your league too, ah
+Side girl out of your league too, ah
 
 [Chorus]
 Look what you've done
-I'm a motherfuckin' starboy
+I'm a starboy
 Look what you've done
-I'm a motherfuckin' starboy
+I'm a starboy
 
 [Verse 2]
-Every day a nigga try to test me, ah
-Every day a nigga try to end me, ah
+Every day a person try to test me, ah
+Every day they try to end me, ah
 Pull off in that Roadster sv, ah
 Pockets overweight, gettin' hefty, ah`,
 
@@ -58,56 +59,135 @@ I look around and Sin City's cold and empty
 No one's around to judge me
 I can't see clearly when you're gone
 I said, ooh, I'm blinded by the lights
-No, I can't sleep until I feel your touch`,
-
-  'bernadya': `[Verse 1]
-Untung ku belum sampai
-Menaruh seluruh harapanku kepadamu
-Untung ku segera tahu
-Kini mereka tahu siapa dirimu
-
-[Chorus]
-Semua cerita yang kau buat
-Kini terbuka perlahan
-Bukan aku yang bersalah
-Kau yang pandai bersandiwara
-
-[Verse 2]
-Kini ku melangkah pergi
-Tanpa setitik pun penyesalan di hati`
+No, I can't sleep until I feel your touch`
 };
 
-export function getLyricsForTrack(track) {
-  if (!track) return null;
-  const title = (track.title || '').toLowerCase();
-  const artist = (track.artist || '').toLowerCase();
+// In-memory cache for fast instant rendering on song re-open
+const lyricsCache = new Map();
 
+// Helper to strip timestamp tags [00:12.34] from synced lyrics
+function cleanLrcTimestamps(lrcText) {
+  if (!lrcText) return '';
+  return lrcText
+    .split('\n')
+    .map(line => line.replace(/\[\d{2}:\d{2}\.\d{2,3}\]/g, '').trim())
+    .join('\n');
+}
+
+// Clean title and artist to maximize LRCLIB search accuracy
+export function cleanSongMetadata(title = '', artist = '') {
+  let cleanTitle = title
+    // Remove (Official Video), [Official Audio], (Lyrics), etc.
+    .replace(/\s*[\(\[](official\s*music\s*video|official\s*video|official\s*audio|visualizer|audio|lyrics|lyric\s*video|hd|hq|4k|mv|remastered)[\)\]]/gi, '')
+    // Remove "ft. X" or "feat. X" from title if present
+    .replace(/\s*(feat\.?|ft\.?)\s+.*$/i, '')
+    .trim();
+
+  let cleanArtist = (artist || '')
+    .replace(/\s*-\s*Topic$/i, '')
+    .replace(/\s*(feat\.?|ft\.?)\s+.*$/i, '')
+    .trim();
+
+  // If title is "Artist - Song Title", split them
+  if (cleanTitle.includes(' - ')) {
+    const parts = cleanTitle.split(' - ');
+    if (parts.length >= 2) {
+      if (!cleanArtist || cleanArtist === 'YouTube' || cleanArtist === 'JumpIn') {
+        cleanArtist = parts[0].trim();
+      }
+      cleanTitle = parts.slice(1).join(' - ').trim();
+    }
+  }
+
+  return { cleanTitle, cleanArtist };
+}
+
+/**
+ * Fetch lyrics dynamically:
+ * 1. Check local preset
+ * 2. Check in-memory cache
+ * 3. Fetch exact match from LRCLIB API
+ * 4. Fetch search match from LRCLIB API
+ */
+export async function fetchLyricsForTrack(track) {
+  if (!track) return null;
+
+  // Radio broadcast handling
+  if (track.isLive || track.isRadio) {
+    return `[Live Radio Broadcast]
+Sedang Mengudara Langsung dari Studio
+${track.title || track.name}
+${track.artist || track.frequency || ''}
+
+${track.tagline || 'Live Streaming 24 Jam Non-stop'}
+Selamat menikmati siaran musik JumpIn Radio!`;
+  }
+
+  const rawTitle = track.title || '';
+  const rawArtist = track.artist || '';
+  const cacheKey = `${rawTitle}__${rawArtist}`.toLowerCase();
+
+  if (lyricsCache.has(cacheKey)) {
+    return lyricsCache.get(cacheKey);
+  }
+
+  // 1. Check preset lyrics first
+  const lowerTitle = rawTitle.toLowerCase();
+  const lowerArtist = rawArtist.toLowerCase();
   for (const [key, text] of Object.entries(PRESET_LYRICS)) {
-    if (title.includes(key) || artist.includes(key)) {
+    if (lowerTitle.includes(key) || lowerArtist.includes(key)) {
+      lyricsCache.set(cacheKey, text);
       return text;
     }
   }
 
-  // Fallback elegant lyrics for any song
-  return `[Verse 1]
-${track.title || 'Lagu Pilihan'}
-Melodi mengalun lembut di malam hari
-Membawa semua angan dan memori
-Bersama nada yang tak pernah mati
+  // 2. Fetch from LRCLIB API
+  const { cleanTitle, cleanArtist } = cleanSongMetadata(rawTitle, rawArtist);
 
-[Chorus]
-Dengarkan suara hati yang bernyanyi
-Di setiap detak irama yang abadi
-Menemani langkah sampai nanti
-Hanya ada JumpIn di dalam diri
+  try {
+    // Attempt A: Exact match with track_name and artist_name
+    if (cleanTitle && cleanArtist) {
+      const exactUrl = `https://lrclib.net/api/get?track_name=${encodeURIComponent(cleanTitle)}&artist_name=${encodeURIComponent(cleanArtist)}`;
+      const res = await fetch(exactUrl);
+      if (res.ok) {
+        const data = await res.json();
+        const lyrics = data.plainLyrics || cleanLrcTimestamps(data.syncedLyrics);
+        if (lyrics && lyrics.trim()) {
+          lyricsCache.set(cacheKey, lyrics.trim());
+          return lyrics.trim();
+        }
+      }
+    }
 
-[Verse 2]
-Nada demi nada terangkai indah
-Menenangkan jiwa yang lelah
-Biarkan musik menjadi rumah
-Tempat segala resah sirna
+    // Attempt B: Search endpoint with clean query
+    const searchQuery = `${cleanTitle} ${cleanArtist}`.trim();
+    if (searchQuery) {
+      const searchUrl = `https://lrclib.net/api/search?q=${encodeURIComponent(searchQuery)}`;
+      const searchRes = await fetch(searchUrl);
+      if (searchRes.ok) {
+        const list = await searchRes.json();
+        if (Array.isArray(list) && list.length > 0) {
+          const match = list.find(item => item.plainLyrics || item.syncedLyrics);
+          if (match) {
+            const lyrics = match.plainLyrics || cleanLrcTimestamps(match.syncedLyrics);
+            if (lyrics && lyrics.trim()) {
+              lyricsCache.set(cacheKey, lyrics.trim());
+              return lyrics.trim();
+            }
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('LRCLIB fetch error:', err);
+  }
 
-[Outro]
-JumpIn Music Experience
-Pure Sound · No Distractions`;
+  // 3. Fallback message if no lyrics found
+  const notFoundMessage = `[Lyrics Not Available]
+Lirik untuk "${cleanTitle || rawTitle}" belum tersedia di database LRCLIB.
+
+Silakan nikmati alunan musik dari ${cleanArtist || rawArtist || 'JumpIn'}!`;
+
+  lyricsCache.set(cacheKey, notFoundMessage);
+  return notFoundMessage;
 }
